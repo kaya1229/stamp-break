@@ -51,7 +51,6 @@
 
         // [보안 반영] API 키를 직접 코드에 노출하지 않고 환경변수나 외부 입력을 유도하는 구조
         // 로컬 테스트 시 아래 주석을 풀고 키를 넣으세요.
-        const TMDB_API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
         
         // 사운드 효과음 (도장 찍는 소리)
@@ -122,8 +121,8 @@
                 if (q.length < 2) return;
                 try {
                     // [아이디어 반영] search/multi를 사용하여 영화와 드라마 통합 검색
-                    const resp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${q}&language=ko-KR`);
-                    const data = await resp.json();
+                    const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
                     const filtered = (data.results || []).filter(item => item.media_type !== 'person');
                     
                     const withOtt = await Promise.all(filtered.map(async (item) => {
