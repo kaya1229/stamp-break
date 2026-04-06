@@ -152,11 +152,20 @@
 
             return (
                 <div className="max-w-5xl mx-auto p-6 flex flex-col items-center pb-40">
-                    <header className="py-8 flex justify-between items-center w-full max-w-2xl mb-12">
-                        <h1 className="text-5xl font-bold italic rotate-[-2deg] font-gaegu leading-none">STAMP BREAK</h1>
-                        <button onClick={() => setCurrentBoard({...currentBoard, id: Date.now(), title: "새로운 판", author: "YOUR NAME", slots: Array(16).fill(null), dones: Array(16).fill(false)})} 
-                                className="doodle-button bg-gray-100 px-4 py-2 font-bold border-2 border-black font-gaegu text-base">+ NEW BOARD</button>
-                    </header>
+                    <header className="py-8 flex justify-between items-end w-full max-w-2xl mb-12">
+    {/* font-black 클래스를 추가하여 두께를 극대화했습니다 */}
+    <h1 className="text-5xl font-black italic rotate-[-2deg] font-gaegu leading-none">
+        STAMP BREAK
+    </h1>
+    
+    {/* items-end와 mb-1을 조합하여 버튼을 타이틀 베이스라인보다 살짝 아래로 내렸습니다 */}
+    <button 
+        onClick={() => setCurrentBoard({...currentBoard, id: Date.now(), title: "새로운 판", author: "YOUR NAME", slots: Array(16).fill(null), dones: Array(16).fill(false)})} 
+        className="doodle-button bg-gray-100 px-4 py-2 font-bold border-2 border-black font-gaegu text-base mb-[-8px]"
+    >
+        + NEW BOARD
+    </button>
+</header>
 
                     <div className="flex flex-col md:flex-row gap-10 items-start justify-center w-full">
                         {/* 📍 설정 사이드바 */}
