@@ -115,15 +115,7 @@
                     <header className="py-8 flex justify-between items-end w-full max-w-2xl border-b border-white/10 mb-8">
                         <div className="flex flex-col">
                             <h1 className="text-3xl font-serif font-black text-white tracking-tighter italic leading-none">STAMP BREAK</h1>
-                            <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-                                <span>Created by</span>
-                                <input 
-                                    className="bg-transparent text-zinc-300 outline-none border-b border-transparent hover:border-zinc-700 focus:border-red-600 transition-all w-32"
-                                    value={currentBoard.author || ""}
-                                    onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
-                                    placeholder="NAME"
-                                />
-                            </div>
+                           
                         </div>
                         <button onClick={() => setCurrentBoard({id: Date.now(), title: "새로운 정복기", author: currentBoard.author, color: "#121212", stamp: "完", isIconMode: false, slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-full text-[10px] font-bold text-zinc-300 transition-all border border-white/5">
                             + NEW BOARD
@@ -168,6 +160,15 @@
                                         value={currentBoard.title}
                                         onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})}
                                     />
+                                     <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                                <span>Created by</span>
+                                <input 
+                                    className="bg-transparent text-zinc-300 outline-none border-b border-transparent hover:border-zinc-700 focus:border-red-600 transition-all w-32"
+                                    value={currentBoard.author || ""}
+                                    onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
+                                    placeholder="NAME"
+                                />
+                            </div>
                                 </div>
                                 <div className="grid grid-cols-4 gap-3">
                                     {currentBoard.slots.map((slot, i) => (
