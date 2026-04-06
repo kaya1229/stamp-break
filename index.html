@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: #ffffff; color: #1a1a1a; font-family: 'Gaegu', cursive; -webkit-font-smoothing: antialiased; }
-        .font-gaegu { font-family: 'Gaegu', cursive; }
+        .font-gaegu { font-family: 'Gaegu', cursive !important; }
         input:focus { outline: none; }
         
         input[type=range] { -webkit-appearance: none; background: #e5e7eb; border-radius: 10px; height: 6px; border: 1px solid #1a1a1a; }
@@ -36,6 +36,9 @@
 
         .custom-scrollbar::-webkit-scrollbar { height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
+
+        /* 캡처 시 폰트 적용을 명확히 하기 위한 클래스 */
+        .export-text { font-family: 'Gaegu', cursive !important; }
     </style>
 </head>
 <body>
@@ -100,36 +103,37 @@
                             const clonedBoard = clonedDoc.querySelector('.board-to-export');
                             if (!clonedBoard) return;
                             
-                            // 1. 입력창(Input)을 일반 텍스트(Div)로 변환 (위치 어긋남 방지 핵심)
+                            // 1. 입력창(Input)을 Div로 변환 및 폰트 강제 적용
                             const inputs = clonedBoard.querySelectorAll('input[type="text"]');
                             inputs.forEach(input => {
                                 const replacement = clonedDoc.createElement('div');
                                 replacement.innerText = input.value;
+                                replacement.className = "export-text";
+                                // 스타일 복제 및 정렬 강제 주입
                                 replacement.style.cssText = window.getComputedStyle(input).cssText;
+                                replacement.style.fontFamily = "'Gaegu', cursive";
                                 replacement.style.display = "flex";
                                 replacement.style.alignItems = "center";
                                 replacement.style.justifyContent = "center";
+                                replacement.style.textAlign = "center";
                                 replacement.style.border = "none";
                                 replacement.style.background = "transparent";
-                                replacement.style.paddingTop = "10px"; // 폰트 높이 보정
+                                replacement.style.paddingTop = input.classList.contains('title-main') ? "15px" : "4px";
                                 input.parentNode.replaceChild(replacement, input);
                             });
 
-                            // 2. 삭제 버튼 숨기기
+                            // 2. 모든 텍스트 엘리먼트에 폰트 강제 주입
+                            clonedDoc.querySelectorAll('div, span, p').forEach(el => {
+                                el.style.fontFamily = "'Gaegu', cursive";
+                            });
+
                             clonedDoc.querySelectorAll('.delete-btn').forEach(btn => btn.style.display = 'none');
                             
-                            // 3. 여백 및 정렬 보정
                             const parent = clonedBoard.parentElement;
                             parent.style.padding = "80px";
                             parent.style.backgroundColor = "#ffffff";
-                            
                             clonedBoard.style.transform = "none"; 
                             clonedBoard.style.margin = "0 auto";
-                            
-                            // 4. 모든 텍스트 정밀 세팅
-                            clonedDoc.querySelectorAll('div, p, span').forEach(el => {
-                                el.style.fontFamily = "'Gaegu', cursive";
-                            });
                         }
                     };
                     const canvas = await html2canvas(element, options);
@@ -214,11 +218,11 @@
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl overflow-visible" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
                                 <div className="py-4 mb-2 flex justify-center">
-                                    <input type="text" className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                    <input type="text" className="title-main bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 </div>
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-8">
                                     <span style={{ color: getContrastColor(currentBoard.color) }}>Created by</span>
-                                    <input type="text" className="bg-transparent border-b border-dashed border-black/30 w-24 text-center font-gaegu text-lg" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
+                                    <input type="text" className="bg-transparent border-b border-dashed border-black/30 w-32 text-center font-gaegu text-xl" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
                                 </div>
                                 <div className={`grid gap-4 ${currentBoard.slots.length <= 11 ? 'grid-cols-3' : currentBoard.slots.length <= 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                                     {currentBoard.slots.map((slot, i) => (
@@ -286,9 +290,13 @@
                             <button onClick={onClear} className="delete-btn absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] z-20 hover:bg-red-500">×</button>
                             <img src={getCORSImageUrl(data.poster)} crossOrigin="anonymous" className={`w-full h-full object-cover transition-all ${isDone ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`} />
                             {!isDone && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-white/10">
-                                    <div className="text-[15px] font-bold text-black font-gaegu leading-tight mb-1">{data.title}</div>
-                                    <div className="flex gap-1.5">{data.ott?.map((logo, i) => <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="w-4 h-4 rounded-sm" />)}</div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-white/20">
+                                    <div className="text-[18px] font-bold text-black font-gaegu leading-tight mb-2 px-1 break-keep">{data.title}</div>
+                                    <div className="flex gap-2 justify-center items-center">
+                                        {data.ott?.map((logo, i) => (
+                                            <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="w-5 h-5 rounded-md border border-black/10 shadow-sm" />
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                             {isDone && (
