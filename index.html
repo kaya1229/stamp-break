@@ -213,10 +213,28 @@
                             <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
                             <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
-                                const dataToShare = { ...currentBoard, dones: Array(currentBoard.slots.length).fill(false) };
-                                const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
-                                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`).then(() => alert("공유 링크 복사 완료!"));
-                            }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
+    // 공유할 데이터에서 불필요한 정보(앨범 등)를 제외하고 필요한 필드만 명시적으로 추출
+    const dataToShare = {
+        id: Date.now(), // 새로운 ID 부여 (받는 사람 기준)
+        title: currentBoard.title,
+        author: currentBoard.author,
+        color: currentBoard.color,
+        stamp: currentBoard.stamp,
+        stampColor: currentBoard.stampColor,
+        isIconMode: currentBoard.isIconMode,
+        slots: currentBoard.slots, // 슬롯 데이터(영화/드라마 정보)는 포함
+        dones: Array(currentBoard.slots.length).fill(false) // 달성 상태는 항상 초기화
+    };
+    
+    // 데이터를 Base64로 인코딩
+    const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
+    
+    // 클립보드 복사
+    navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`)
+        .then(() => alert("공유 링크 복사 완료! (달성 상태와 개인 앨범은 제외됩니다.)"));
+}} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">
+    SHARE LINK
+</button>
                         </div>
 
                         {album.length > 0 && (
