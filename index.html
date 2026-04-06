@@ -35,7 +35,6 @@
         const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
-        // 아이콘 추천 사전
         const ICON_SUGGESTIONS = [
             { id: 'check', icon: 'check' },
             { id: 'heart', icon: 'heart' },
@@ -55,7 +54,6 @@
         function App() {
             const [album, setAlbum] = useState(() => JSON.parse(localStorage.getItem('sb_album') || '[]'));
             const [currentBoard, setCurrentBoard] = useState(() => {
-                // 1. URL 파라미터에서 데이터 복구 시도
                 const params = new URLSearchParams(window.location.search);
                 const sharedData = params.get('data');
                 if (sharedData) {
@@ -63,11 +61,9 @@
                         return JSON.parse(decodeURIComponent(atob(sharedData)));
                     } catch(e) { console.error("Data recovery failed", e); }
                 }
-                
-                // 2. 없으면 로컬 스토리지에서 시도
                 const saved = localStorage.getItem('sb_current');
                 return saved ? JSON.parse(saved) : {
-                    id: Date.now(), title: "도장깨기 리스트", author: "YOUR NAME",color: "#121212", 
+                    id: Date.now(), title: "도장깨기 리스트", author: "YOUR NAME", color: "#121212", 
                     stamp: "完", isIconMode: false, slots: Array(16).fill(null), dones: Array(16).fill(false)
                 };
             });
@@ -76,7 +72,6 @@
             const [activeIndex, setActiveIndex] = useState(null);
             const [results, setResults] = useState([]);
 
-            // 아이콘 렌더링용 useEffect
             useEffect(() => {
                 if (window.lucide) window.lucide.createIcons();
             }, [currentBoard, results, isSearchOpen]);
@@ -101,13 +96,11 @@
             };
 
             const shareLink = () => {
-                // 데이터를 Base64로 인코딩하여 URL 생성
                 const jsonStr = JSON.stringify(currentBoard);
                 const encodedData = btoa(encodeURIComponent(jsonStr));
                 const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
-                
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("공유 링크가 클립보드에 복사되었습니다! 이 링크를 친구에게 보내보세요.");
+                    alert("공유 링크가 클립보드에 복사되었습니다!");
                 });
             };
 
@@ -119,19 +112,22 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-4 flex flex-col items-center pb-40">
-                    <header className="py-8 flex justify-between items-center w-full max-w-2xl">
-                        <h1 className="text-3xl font-serif font-black text-white tracking-tighter italic">STAMP BREAK</h1>
-                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
-            <span>Created by</span>
-            <input 
-                className="bg-transparent text-zinc-300 outline-none border-b border-transparent hover:border-zinc-700 focus:border-red-600 transition-all w-32"
-                value={currentBoard.author || ""}
-                onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
-                placeholder="NAME"
-            />
-        </div>
-        </div>
-                        <button onClick={() => setCurrentBoard({id: Date.now(), title: "새로운 정복기", color: "#121212", stamp: "完", isIconMode: false, slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-full text-[10px] font-bold text-zinc-300 transition-all border border-white/5">+ NEW BOARD</button>
+                    <header className="py-8 flex justify-between items-end w-full max-w-2xl border-b border-white/10 mb-8">
+                        <div className="flex flex-col">
+                            <h1 className="text-3xl font-serif font-black text-white tracking-tighter italic leading-none">STAMP BREAK</h1>
+                            <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                                <span>Created by</span>
+                                <input 
+                                    className="bg-transparent text-zinc-300 outline-none border-b border-transparent hover:border-zinc-700 focus:border-red-600 transition-all w-32"
+                                    value={currentBoard.author || ""}
+                                    onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
+                                    placeholder="NAME"
+                                />
+                            </div>
+                        </div>
+                        <button onClick={() => setCurrentBoard({id: Date.now(), title: "새로운 정복기", author: currentBoard.author, color: "#121212", stamp: "完", isIconMode: false, slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-full text-[10px] font-bold text-zinc-300 transition-all border border-white/5">
+                            + NEW BOARD
+                        </button>
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-2xl">
@@ -197,15 +193,15 @@
                             <button onClick={shareLink} className="bg-red-700 py-5 rounded-2xl font-bold text-sm hover:bg-red-600 transition-all shadow-lg text-white">🔗 링크 공유</button>
                         </div>
 
-                        {/* 내 컬렉션 목록 */}
                         <div>
                             <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Collections ({album.length})</h2>
                             <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                                 {album.map(b => (
                                     <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[130px] aspect-square rounded-2xl border-2 p-4 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10' : 'border-zinc-800 bg-zinc-900'}`}>
-                                        <div className="text-[11px] font-black leading-tight line-clamp-2">{b.title}</div>
-                                        <div className="text-[8px] text-zinc-500 mt-1 uppercase tracking-wider">BY {b.author || 'ANON'}</div>
-        </div>
+                                        <div>
+                                            <div className="text-[11px] font-black leading-tight line-clamp-2">{b.title}</div>
+                                            <div className="text-[8px] text-zinc-500 mt-1 uppercase tracking-wider">BY {b.author || 'ANON'}</div>
+                                        </div>
                                         <div className="text-right text-red-600 font-serif text-xl">
                                             {b.isIconMode ? <i data-lucide={b.stamp} className="w-5 h-5 ml-auto"></i> : b.stamp}
                                         </div>
@@ -215,7 +211,6 @@
                         </div>
                     </div>
 
-                    {/* 검색창 모달 */}
                     {isSearchOpen && (
                         <div className="fixed inset-0 bg-black/95 z-50 p-6 flex flex-col items-center">
                             <div className="w-full max-w-md">
