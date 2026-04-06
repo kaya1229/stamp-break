@@ -47,6 +47,7 @@
 
         const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+        // CORS 우회를 위해 타임스탬프를 쿼리 파라미터로 추가
         const getCORSImageUrl = (url) => url ? `${url}?t=${new Date().getTime()}` : null;
 
         const ICON_SUGGESTIONS = [
@@ -101,62 +102,65 @@
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
 
-                // 1. 폰트 로드 완료 보장
-                await document.fonts.ready;
-
-                const element = boardRef.current;
-                
-                const options = {
-                    useCORS: true,
-                    allowTaint: true,
-                    scale: 2, // 고해상도 고정
-                    backgroundColor: "#ffffff",
-                    logging: false,
-                    // 2. 캡처 영역을 실제 요소보다 넉넉하게 잡아 잘림 방지 (여백 확보)
-                    width: element.offsetWidth + 80,
-                    height: element.offsetHeight + 80,
-                    x: -40,
-                    y: -40,
-                    // 3. 브라우저 창 크기에 따른 가변 방지
-                    windowWidth: 1200,
-                    windowHeight: 1200,
-                    onclone: (clonedDoc) => {
-                        const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
-                        deleteBtns.forEach(btn => btn.style.display = 'none');
-
-                        const board = clonedDoc.querySelector('.board-to-export');
-                        if (board) {
-                            // 4. 정렬 틀어짐 방지: 캡처 시에만 회전 해제 및 내부 마진 조정
-                            board.style.transform = "none";
-                            board.style.margin = "40px";
-                            board.style.boxShadow = "8px 8px 0px #000";
-                        }
-
-                        // 5. 텍스트 간격 밀림 방지 및 폰트 강제 지정
-                        const allTexts = clonedDoc.querySelectorAll('input, div, p, span');
-                        allTexts.forEach(el => {
-                            el.style.letterSpacing = "0px";
-                            el.style.fontFamily = "'Gaegu', cursive";
-                        });
-
-                        // 6. 아이콘 중앙 정렬 고정
-                        const icons = clonedDoc.querySelectorAll('i[data-lucide]');
-                        icons.forEach(icon => {
-                            icon.style.display = 'inline-flex';
-                            icon.style.alignItems = 'center';
-                            icon.style.justifyContent = 'center';
-                        });
-                    }
-                };
-
                 try {
+                    // 1. 폰트 로드 완료 보장
+                    await document.fonts.ready;
+
+                    const element = boardRef.current;
+                    
+                    const options = {
+                        useCORS: true,         // 외부 포스터 이미지 허용
+                        allowTaint: false,      // 보안 정책상 false 권장
+                        scale: 2,               // 고화질 (간격 좁아짐 방지)
+                        backgroundColor: "#ffffff",
+                        logging: false,
+                        // 2. 캡처 영역 여백 확보 (잘림 방지)
+                        width: element.offsetWidth + 60,
+                        height: element.offsetHeight + 60,
+                        x: -30,
+                        y: -30,
+                        // 3. 기준 해상도 고정
+                        windowWidth: 1200,
+                        windowHeight: 1200,
+                        onclone: (clonedDoc) => {
+                            // UI 정리 (삭제 버튼 숨기기)
+                            const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
+                            deleteBtns.forEach(btn => btn.style.display = 'none');
+
+                            const board = clonedDoc.querySelector('.board-to-export');
+                            if (board) {
+                                // 4. 캡처 시에만 회전을 풀어 정렬 정확도 확보
+                                board.style.transform = "none";
+                                board.style.margin = "30px";
+                                board.style.boxShadow = "8px 8px 0px #000";
+                            }
+
+                            // 5. 텍스트/아이콘 정렬 안정화
+                            const allElements = clonedDoc.querySelectorAll('input, div, p, span, i');
+                            allElements.forEach(el => {
+                                el.style.letterSpacing = "0px";
+                                if (el.tagName === 'I') {
+                                    el.style.display = 'inline-flex';
+                                    el.style.alignItems = 'center';
+                                    el.style.justifyContent = 'center';
+                                }
+                            });
+                        }
+                    };
+
                     const canvas = await html2canvas(element, options);
+                    const image = canvas.toDataURL("image/png", 1.0);
                     const link = document.createElement("a");
-                    link.href = canvas.toDataURL("image/png", 1.0);
-                    link.download = `${currentBoard.title}.png`;
+                    link.href = image;
+                    link.download = `${currentBoard.title || 'stamp-board'}.png`;
+                    
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
+                    
                 } catch (err) {
-                    console.error("Image Export Error:", err);
+                    console.error("이미지 생성 오류:", err);
+                    alert("이미지 저장에 실패했습니다. 다시 시도해 주세요.");
                 }
             };
 
