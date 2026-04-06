@@ -122,10 +122,8 @@
                 <div className="max-w-4xl mx-auto p-4 flex flex-col items-center pb-40">
                     <header className="py-8 flex justify-between items-end w-full max-w-2xl border-b border-white/10 mb-8">
                         <div className="flex flex-col">
-                            <h1 className="text-3xl font-serif font-black tracking-tighter italic leading-none transition-colors"
-                                style={{ color: dynamicTextColor }}>
-                                STAMP BREAK
-                            </h1>
+                            <h1 className="text-3xl font-serif font-black text-white tracking-tighter italic leading-none">STAMP BREAK</h1>
+
                            
                         </div>
                         <button onClick={() => setCurrentBoard({id: Date.now(), title: "새로운 정복기", author: currentBoard.author, color: "#121212", stamp: "完", isIconMode: false, slots: Array(16).fill(null), dones: Array(16).fill(false)})} 
