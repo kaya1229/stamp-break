@@ -163,7 +163,6 @@
                             <div style={{ backgroundColor: currentBoard.color }} className="p-8 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[1deg]">
                                 <input className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: dynamicTextColor }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 
-                                {/* 📍 만든 이 입력창 위치 변경 */}
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-6 mt-2">
                                     <span style={{ color: dynamicTextColor }}>Created by</span>
                                     <input className="bg-transparent border-b border-dashed border-black/30 focus:border-black w-24 text-center font-gaegu text-lg" style={{ color: dynamicTextColor }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
@@ -188,11 +187,20 @@
                             <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-left">My Collections ({album.length})</h2>
                             <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                                 {album.map(b => (
-                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-40 hover:opacity-100'}`}>
-                                        {/* 📍 앨범 카드 삭제 버튼 */}
-                                        <button onClick={(e) => deleteFromAlbum(b.id, e)} className="absolute -top-2 -right-2 w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold border border-white z-10 hover:bg-red-500 transition-colors">×</button>
-                                        <div className="text-[14px] font-bold leading-tight truncate font-gaegu">{b.title}</div>
-                                        <div className="text-right font-gaegu text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-5 h-5 ml-auto"></i> : b.stamp}</div>
+                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-40 hover:opacity-100'}`}>
+                                        {/* 📍 삭제 버튼: 카드 내부 우측 상단으로 이동 */}
+                                        <button onClick={(e) => deleteFromAlbum(b.id, e)} className="absolute top-2 right-2 w-5 h-5 bg-black/80 text-white rounded-full flex items-center justify-center text-[10px] font-bold z-10 hover:bg-red-500 transition-colors">×</button>
+                                        
+                                        <div className="flex-grow flex items-center justify-center">
+                                            <div className="font-gaegu text-3xl" style={{ color: b.stampColor }}>
+                                                {b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* 📍 제목: 하단으로 이동 */}
+                                        <div className="text-[14px] font-bold leading-tight truncate font-gaegu mt-auto pt-2 border-t border-black/5 w-full text-center">
+                                            {b.title}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -225,7 +233,6 @@
                 <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${randomRotate}deg)` }} className="relative aspect-[3/4] bg-white border-2 border-black overflow-hidden cursor-pointer hover:scale-105 transition-transform shadow-[2px_2px_0px_#000]">
                     {data ? (
                         <>
-                            {/* 📍 포스터 삭제 버튼 (X) */}
                             <button onClick={onClear} className="absolute top-1 right-1 w-5 h-5 bg-black/80 text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 hover:bg-red-600 transition-colors">×</button>
                             
                             <img src={data.poster} className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 opacity-100' : 'grayscale opacity-25'}`} />
