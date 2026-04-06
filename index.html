@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>도장 깨기</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #ffffff; color: #1a1a1a; font-family: 'Gaegu', cursive; overflow-x: hidden; }
+        body { background-color: #ffffff; color: #1a1a1a; font-family: 'Gaegu', cursive; overflow-x: hidden; touch-action: manipulation; }
         .font-gaegu { font-family: 'Gaegu', cursive; }
         input:focus { outline: none; }
         
@@ -23,7 +23,7 @@
         
         .doodle-border { border: 2.5px solid #1a1a1a; border-radius: 255px 15px 225px 15px/15px 225px 15px 255px; }
         .doodle-button { border: 2px solid #1a1a1a; border-radius: 10px 20px 10px 25px/15px 10px 25px 12px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .palette-box { border: 2px solid #1a1a1a; border-radius: 4px; overflow: hidden; position: relative; width: 36px; height: 36px; cursor: pointer; }
+        .palette-box { border: 2px solid #1a1a1a; border-radius: 4px; overflow: hidden; position: relative; width: 32px; height: 32px; cursor: pointer; }
         .palette-box input[type="color"] { position: absolute; top: -10px; left: -10px; width: 200%; height: 200%; cursor: pointer; opacity: 0; }
         
         input[type=range] { -webkit-appearance: none; background: transparent; }
@@ -109,34 +109,34 @@
             };
 
             return (
-                <div className="max-w-4xl mx-auto p-6 flex flex-col items-center pb-24 relative">
-                    <header className="py-8 flex justify-between items-center w-full mb-4">
-                        <h1 className="text-5xl md:text-6xl font-black italic font-gaegu tracking-tighter">도장깨기</h1>
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => setViewerMode(!viewerMode)} className={`doodle-button px-4 py-2 font-bold font-gaegu shadow-[2px_2px_0px_#000] transition-all ${viewerMode ? 'bg-yellow-300 scale-105' : 'bg-white opacity-40 grayscale'}`}>
-                                {viewerMode ? '💡 VIEWER ON' : '💡 VIEWER OFF'}
+                <div className="max-w-4xl mx-auto p-4 md:p-6 flex flex-col items-center pb-24 relative">
+                    <header className="py-4 md:py-8 flex justify-between items-center w-full mb-2">
+                        <h1 className="text-4xl md:text-6xl font-black italic font-gaegu tracking-tighter">도장깨기</h1>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setViewerMode(!viewerMode)} className={`doodle-button px-3 py-1.5 text-xs md:text-base font-bold font-gaegu shadow-[2px_2px_0px_#000] ${viewerMode ? 'bg-yellow-300' : 'bg-white opacity-40'}`}>
+                                {viewerMode ? '💡 VIEW' : '💡 EDIT'}
                             </button>
-                            <button onClick={() => window.location.search = ""} className="doodle-button bg-gray-100 px-4 py-2 font-bold font-gaegu shadow-[2px_2px_0px_#000]">+ NEW</button>
+                            <button onClick={() => window.location.search = ""} className="doodle-button bg-gray-100 px-3 py-1.5 text-xs md:text-base font-bold font-gaegu shadow-[2px_2px_0px_#000]">+ NEW</button>
                         </div>
                     </header>
 
                     <main className={`w-full transition-all duration-500 ${viewerMode ? 'scale-95 opacity-80' : 'scale-100'}`}>
                         {viewerMode && (
-                            <div className="w-full text-center mb-6 font-gaegu text-xl font-bold text-gray-400">
-                                현재 <span className="text-black underline decoration-2 decoration-yellow-400">{realParticipantCount.toLocaleString()}명</span>이 참여 중!
+                            <div className="w-full text-center mb-4 font-gaegu text-lg font-bold text-gray-400">
+                                참여 중: <span className="text-black underline decoration-yellow-400">{realParticipantCount.toLocaleString()}명</span>
                             </div>
                         )}
 
-                        <div style={{ backgroundColor: currentBoard.color }} className="p-6 md:p-12 doodle-border border-[3px] border-black shadow-[12px_12px_0px_#000] relative">
-                            <div className="mb-14 flex flex-col items-center">
-                                <input className="bg-transparent text-3xl md:text-5xl font-bold w-full text-center outline-none font-gaegu pb-6 mb-2" style={{ color: textColor, borderBottom: `4px dashed ${textColor}44` }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
-                                <div className="flex items-center text-xl md:text-2xl font-bold opacity-80 mt-2 font-gaegu" style={{ color: textColor }}>
-                                    <span className="mr-2 italic opacity-60 text-sm md:text-base">만든 이 | </span>
-                                    <input className="bg-transparent border-b border-dashed border-current w-32 text-center" value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value})} />
+                        <div style={{ backgroundColor: currentBoard.color }} className="p-4 md:p-12 doodle-border border-[2.5px] md:border-[3px] border-black shadow-[6px_6px_0px_#000] md:shadow-[12px_12px_0px_#000] relative">
+                            <div className="mb-8 md:mb-14 flex flex-col items-center">
+                                <input className="bg-transparent text-2xl md:text-5xl font-bold w-full text-center outline-none font-gaegu pb-2 md:pb-6 mb-2" style={{ color: textColor, borderBottom: `3px dashed ${textColor}44` }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                <div className="flex items-center text-lg md:text-2xl font-bold opacity-80 mt-1 font-gaegu" style={{ color: textColor }}>
+                                    <span className="mr-1 italic opacity-60 text-xs md:text-base">BY | </span>
+                                    <input className="bg-transparent border-b border-dashed border-current w-24 md:w-32 text-center" value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value})} />
                                 </div>
                             </div>
                             
-                            <div className={`grid gap-4 ${currentBoard.slots.length <= 11 ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5'}`}>
+                            <div className={`grid gap-2 md:gap-4 ${currentBoard.slots.length <= 11 ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5'}`}>
                                 {currentBoard.slots.map((slot, i) => (
                                     <Slot key={i} data={slot} isDone={currentBoard.dones[i]} idx={i} 
                                         stamp={currentBoard.stamp} stampColor={currentBoard.stampColor} 
@@ -155,9 +155,9 @@
                         </div>
                     </main>
 
-                    <section className="w-full mt-10 p-8 bg-gray-50 rounded-3xl border-2 border-black/10 flex flex-col gap-8 shadow-sm">
+                    <section className="w-full mt-8 p-6 bg-gray-50 rounded-2xl border-2 border-black/10 flex flex-col gap-6 shadow-sm">
                         <div className="w-full flex flex-col gap-2">
-                            <label className="text-sm font-bold text-gray-500 uppercase font-gaegu ml-1">Slot Count: {currentBoard.slots.length}</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase font-gaegu ml-1">Slots: {currentBoard.slots.length}</label>
                             <input type="range" min="9" max="25" value={currentBoard.slots.length} onChange={(e) => {
                                 const n = parseInt(e.target.value);
                                 let s = currentBoard.slots.slice(0, n);
@@ -170,60 +170,50 @@
                             }} />
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-6">
-                            <div className="flex gap-8">
-                                <div className="flex flex-col gap-1 items-center">
-                                    <label className="text-[12px] font-bold text-gray-400 font-gaegu uppercase tracking-widest">Board Color</label>
-                                    <div className="palette-box" style={{ backgroundColor: currentBoard.color }}><input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} /></div>
-                                </div>
-                                <div className="flex flex-col gap-1 items-center">
-                                    <label className="text-[12px] font-bold text-gray-400 font-gaegu uppercase tracking-widest">Stamp Color</label>
-                                    <div className="palette-box" style={{ backgroundColor: currentBoard.stampColor }}><input type="color" value={currentBoard.stampColor} onChange={(e) => setCurrentBoard({...currentBoard, stampColor: e.target.value})} /></div>
-                                </div>
-                                <div className="flex flex-col gap-1 items-center">
-                                    <label className="text-[12px] font-bold text-gray-400 font-gaegu uppercase tracking-widest">Stamp Style</label>
-                                    <div className="flex items-center gap-3">
-                                        <input className="w-10 h-10 bg-white border-2 border-black rounded-lg text-center font-bold text-xl font-gaegu" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
-                                        <div className="flex gap-1">
-                                            {['heart', 'star', 'check', 'smile'].map(icon => (
-                                                <button key={icon} onClick={() => setCurrentBoard({...currentBoard, stamp: icon, isIconMode: true})} className={`w-8 h-8 flex items-center justify-center rounded border border-black/5 ${currentBoard.isIconMode && currentBoard.stamp === icon ? 'bg-black text-white' : 'bg-white'}`}><i data-lucide={icon} className="w-4 h-4"></i></button>
-                                            ))}
-                                        </div>
-                                        <div className="h-8 w-[1px] bg-gray-300 mx-1"></div>
-                                        <button 
-                                            onClick={() => setCurrentBoard({...currentBoard, useStampBorder: !currentBoard.useStampBorder})}
-                                            className={`px-3 py-1 rounded border-2 border-black font-bold font-gaegu text-sm transition-colors ${currentBoard.useStampBorder ? 'bg-black text-white' : 'bg-white text-black'}`}
-                                        >
-                                            BORDER {currentBoard.useStampBorder ? 'ON' : 'OFF'}
-                                        </button>
+                        <div className="flex flex-wrap items-center justify-start gap-4 md:gap-8">
+                            <div className="flex flex-col gap-1 items-center">
+                                <label className="text-[10px] font-bold text-gray-400 font-gaegu uppercase">Board</label>
+                                <div className="palette-box" style={{ backgroundColor: currentBoard.color }}><input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} /></div>
+                            </div>
+                            <div className="flex flex-col gap-1 items-center">
+                                <label className="text-[10px] font-bold text-gray-400 font-gaegu uppercase">Stamp</label>
+                                <div className="palette-box" style={{ backgroundColor: currentBoard.stampColor }}><input type="color" value={currentBoard.stampColor} onChange={(e) => setCurrentBoard({...currentBoard, stampColor: e.target.value})} /></div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-400 font-gaegu uppercase ml-1">Stamp Style</label>
+                                <div className="flex items-center gap-2">
+                                    <input className="w-8 h-8 bg-white border-2 border-black rounded text-center font-bold font-gaegu" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
+                                    <div className="flex gap-0.5">
+                                        {['heart', 'star', 'check', 'smile'].map(icon => (
+                                            <button key={icon} onClick={() => setCurrentBoard({...currentBoard, stamp: icon, isIconMode: true})} className={`w-7 h-7 flex items-center justify-center rounded border border-black/5 ${currentBoard.isIconMode && currentBoard.stamp === icon ? 'bg-black text-white' : 'bg-white'}`}><i data-lucide={icon} className="w-3.5 h-3.5"></i></button>
+                                        ))}
                                     </div>
+                                    <button onClick={() => setCurrentBoard({...currentBoard, useStampBorder: !currentBoard.useStampBorder})} className={`px-2 py-1 rounded border-2 border-black font-bold font-gaegu text-xs ${currentBoard.useStampBorder ? 'bg-black text-white' : 'bg-white'}`}>BORDER</button>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <div className="flex gap-4 mt-8">
-                        <button onClick={saveToAlbum} className="doodle-button bg-white px-8 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000] hover:bg-gray-50 active:translate-y-1 active:shadow-none transition-all">
-                            {album.some(b => b.id === currentBoard.id) ? "UPDATE" : "SAVE"}
-                        </button>
+                    <div className="flex gap-3 mt-8 w-full">
+                        <button onClick={saveToAlbum} className="flex-1 doodle-button bg-white py-3 font-bold font-gaegu text-lg shadow-[3px_3px_0px_#000]">SAVE</button>
                         <button onClick={() => {
                             const { dones, ...safeData } = currentBoard;
                             const data = btoa(encodeURIComponent(JSON.stringify(safeData)));
                             navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${data}`).then(() => alert("링크 복사 완료!"));
-                        }} className="doodle-button bg-black text-white px-8 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">SHARE LIST</button>
+                        }} className="flex-1 doodle-button bg-black text-white py-3 font-bold font-gaegu text-lg shadow-[3px_3px_0px_rgba(0,0,0,0.3)]">SHARE</button>
                     </div>
 
                     {album.length > 0 && (
-                        <div className="w-full mt-12 p-8 bg-gray-50 border-2 border-black doodle-border shadow-sm">
-                            <h2 className="text-2xl font-bold uppercase mb-8 font-gaegu opacity-60">My Collections</h2>
-                            <div className="flex gap-5 overflow-x-auto pb-4 custom-scrollbar">
+                        <div className="w-full mt-10 p-4 md:p-8 bg-gray-50 border-2 border-black doodle-border shadow-sm">
+                            <h2 className="text-xl font-bold uppercase mb-4 md:mb-8 font-gaegu opacity-50">Album</h2>
+                            <div className="flex gap-3 md:gap-5 overflow-x-auto pb-2 custom-scrollbar">
                                 {album.map(b => (
-                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className="relative min-w-[150px] aspect-square bg-white border-2 border-black p-4 cursor-pointer shadow-[4px_4px_0px_#000] flex flex-col group">
-                                        <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(i => i.id !== b.id)); }} className="absolute top-1 right-2 text-2xl font-bold text-gray-300 hover:text-red-500 z-10 transition-colors">×</button>
-                                        <div className="flex-grow flex items-center justify-center text-4xl" style={{ color: b.stampColor }}>
-                                            {b.isIconMode ? <i data-lucide={b.stamp} className="w-12 h-12"></i> : b.stamp}
+                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className="relative min-w-[110px] md:min-w-[150px] aspect-square bg-white border-2 border-black p-2 md:p-4 cursor-pointer shadow-[3px_3px_0px_#000] flex flex-col group">
+                                        <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(i => i.id !== b.id)); }} className="absolute top-1 right-1 text-xl font-bold text-gray-300 hover:text-red-500 z-10">×</button>
+                                        <div className="flex-grow flex items-center justify-center text-2xl md:text-4xl" style={{ color: b.stampColor }}>
+                                            {b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8 md:w-12 md:h-12"></i> : b.stamp}
                                         </div>
-                                        <div className="text-lg font-bold truncate text-center border-t border-black/5 pt-2 font-gaegu">{b.title}</div>
+                                        <div className="text-xs md:text-lg font-bold truncate text-center border-t border-black/5 pt-1 font-gaegu">{b.title}</div>
                                     </div>
                                 ))}
                             </div>
@@ -231,47 +221,39 @@
                     )}
 
                     {isSearchOpen && (
-                        <div className="fixed inset-0 bg-white z-[100] p-6 flex flex-col items-center overflow-y-auto">
-                            <div className="w-full max-w-md mt-10">
-                                <div className="flex justify-between items-center mb-8 font-gaegu">
-                                    <span className="text-4xl font-black italic">SEARCH</span>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => setManualAdd(!manualAdd)} className="text-sm border-2 border-black px-2 py-1 rounded font-bold">{manualAdd ? '검색으로' : '직접 추가'}</button>
-                                        <button onClick={() => { setIsSearchOpen(false); setManualAdd(false); setResults([]); }} className="text-5xl leading-none">&times;</button>
+                        <div className="fixed inset-0 bg-white z-[100] p-4 flex flex-col items-center overflow-y-auto">
+                            <div className="w-full max-w-md mt-4">
+                                <div className="flex justify-between items-center mb-6 font-gaegu">
+                                    <span className="text-3xl font-black italic">SEARCH</span>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => setManualAdd(!manualAdd)} className="text-xs border-2 border-black px-2 py-1 rounded font-bold">{manualAdd ? '검색' : '직접'}</button>
+                                        <button onClick={() => { setIsSearchOpen(false); setManualAdd(false); setResults([]); }} className="text-4xl leading-none">&times;</button>
                                     </div>
                                 </div>
-                                
                                 {manualAdd ? (
-                                    <div className="flex flex-col gap-6 p-8 border-4 border-black doodle-border font-gaegu bg-white">
-                                        <div className="flex flex-col gap-2">
-                                            <label className="font-bold text-lg">작품 제목</label>
-                                            <input className="w-full border-b-4 border-black p-2 text-xl outline-none" value={manualData.title} onChange={e => setManualData({...manualData, title: e.target.value})} />
-                                        </div>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="font-bold text-lg">이미지 URL (선택)</label>
-                                            <input className="w-full border-b-4 border-black p-2 text-sm outline-none" value={manualData.poster} onChange={e => setManualData({...manualData, poster: e.target.value})} />
-                                        </div>
+                                    <div className="flex flex-col gap-4 p-6 border-4 border-black doodle-border font-gaegu bg-white">
+                                        <input className="w-full border-b-2 border-black p-2 text-lg outline-none" placeholder="제목" value={manualData.title} onChange={e => setManualData({...manualData, title: e.target.value})} />
+                                        <input className="w-full border-b-2 border-black p-2 text-sm outline-none" placeholder="이미지 URL" value={manualData.poster} onChange={e => setManualData({...manualData, poster: e.target.value})} />
                                         <button onClick={() => {
                                             const newSlots = [...currentBoard.slots];
                                             newSlots[activeIndex] = { title: manualData.title, poster: manualData.poster };
                                             setCurrentBoard({...currentBoard, slots: newSlots});
                                             setManualAdd(false); setIsSearchOpen(false); setManualData({ title: '', poster: '' });
-                                        }} className="doodle-button bg-black text-white p-4 text-2xl font-bold">슬롯에 담기</button>
+                                        }} className="doodle-button bg-black text-white p-3 text-xl font-bold">ADD</button>
                                     </div>
                                 ) : (
                                     <>
-                                        <input className="w-full bg-white p-5 border-4 border-black text-2xl mb-8 font-bold doodle-border font-gaegu" placeholder="제목을 입력하세요..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
-                                        <div className="grid grid-cols-3 gap-4 pb-10">
+                                        <input className="w-full bg-white p-4 border-4 border-black text-xl mb-6 font-bold doodle-border font-gaegu" placeholder="검색어..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
+                                        <div className="grid grid-cols-3 gap-2 pb-10">
                                             {results.map(d => (
                                                 <div key={d.id} onClick={() => {
                                                     const newSlots = [...currentBoard.slots];
                                                     newSlots[activeIndex] = { title: d.name || d.title, poster: d.poster_path ? IMAGE_BASE + d.poster_path : '' };
                                                     setCurrentBoard({...currentBoard, slots: newSlots});
-                                                    setIsSearchOpen(false);
-                                                    setResults([]);
-                                                }} className="cursor-pointer text-center bg-white p-1 border-2 border-black doodle-border group">
-                                                    <img src={d.poster_path ? IMAGE_BASE + d.poster_path : 'https://via.placeholder.com/200x300'} className="w-full aspect-[2/3] object-cover mb-1 group-hover:scale-[1.02] transition-transform" />
-                                                    <p className="text-[14px] font-bold line-clamp-1 font-gaegu">{d.name || d.title}</p>
+                                                    setIsSearchOpen(false); setResults([]);
+                                                }} className="cursor-pointer text-center bg-white p-1 border-2 border-black doodle-border">
+                                                    <img src={d.poster_path ? IMAGE_BASE + d.poster_path : 'https://via.placeholder.com/200x300'} className="w-full aspect-[2/3] object-cover mb-1" />
+                                                    <p className="text-[10px] font-bold line-clamp-1 font-gaegu">{d.name || d.title}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -285,31 +267,31 @@
         }
 
         function Slot({ data, isDone, onToggle, idx, stamp, stampColor, isIconMode, useStampBorder, onClear, onSearch }) {
-            const rotate = [ -1.5, 1.2, -0.8, 1.5, -1.1, 0.9 ][idx % 6];
+            const rotate = [ -1.2, 1, -0.7, 1.2, -1, 0.8 ][idx % 6];
             return (
-                <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${rotate}deg)` }} className="relative aspect-[3/4] bg-white border-2 border-black overflow-hidden cursor-pointer shadow-[3px_3px_0px_#000] group transition-transform active:scale-95">
+                <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${rotate}deg)` }} className="relative aspect-[3/4] bg-white border-[1.5px] md:border-2 border-black overflow-hidden cursor-pointer shadow-[2px_2px_0px_#000] md:shadow-[3px_3px_0px_#000] group transition-transform active:scale-95">
                     {data ? (
                         <>
-                            <button onClick={(e) => { e.stopPropagation(); onClear(); }} className="absolute top-0 right-1.5 text-2xl font-bold text-white z-20 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                            <button onClick={(e) => { e.stopPropagation(); onClear(); }} className="absolute top-0 right-1 text-xl md:text-2xl font-bold text-white z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">×</button>
                             {data.poster ? (
                                 <img src={data.poster} className={`w-full h-full object-cover transition-all duration-300 ${isDone ? 'opacity-100' : 'opacity-20 grayscale'}`} />
                             ) : (
-                                <div className="w-full h-full bg-gray-50 flex items-center justify-center p-3 text-center text-xl font-bold font-gaegu">{data.title}</div>
+                                <div className="w-full h-full bg-gray-50 flex items-center justify-center p-2 text-center text-[10px] md:text-xl font-bold font-gaegu leading-tight">{data.title}</div>
                             )}
                             
-                            {(!isDone && data.poster) && <div className="absolute inset-0 flex items-center justify-center p-3 text-center text-xl font-bold font-gaegu leading-tight drop-shadow-sm">{data.title}</div>}
+                            {(!isDone && data.poster) && <div className="absolute inset-0 flex items-center justify-center p-2 text-center text-[10px] md:text-xl font-bold font-gaegu leading-tight drop-shadow-sm">{data.title}</div>}
                             
                             {isDone && (
-                                <div className="absolute bottom-3 right-3 flex items-center justify-center animate-stamp pointer-events-none z-30">
-                                    <div className={`p-1 bg-transparent ${useStampBorder ? 'border-[3.5px]' : ''}`} style={{ borderColor: stampColor }}>
-                                        <div className="font-gaegu font-black text-4xl md:text-5xl leading-none" style={{ color: stampColor }}>
-                                            {isIconMode ? <i data-lucide={stamp} className="w-10 h-10 stroke-[5px]"></i> : <span>{stamp}</span>}
+                                <div className="absolute bottom-1 right-1 md:bottom-3 md:right-3 flex items-center justify-center animate-stamp pointer-events-none z-30">
+                                    <div className={`p-0.5 md:p-1 bg-transparent ${useStampBorder ? 'border-[2px] md:border-[3.5px]' : ''}`} style={{ borderColor: stampColor }}>
+                                        <div className="font-gaegu font-black text-2xl md:text-5xl leading-none" style={{ color: stampColor }}>
+                                            {isIconMode ? <i data-lucide={stamp} className="w-6 h-6 md:w-10 md:h-10 stroke-[4px] md:stroke-[5px]"></i> : <span>{stamp}</span>}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </>
-                    ) : <div className="h-full flex items-center justify-center text-gray-100 text-5xl hover:text-gray-300 font-gaegu">+</div>}
+                    ) : <div className="h-full flex items-center justify-center text-gray-100 text-3xl md:text-5xl font-gaegu">+</div>}
                 </div>
             );
         }
