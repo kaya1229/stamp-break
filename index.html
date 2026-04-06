@@ -9,7 +9,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: #ffffff; color: #1a1a1a; font-family: 'Gaegu', cursive; -webkit-font-smoothing: antialiased; }
@@ -41,7 +40,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
         const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
@@ -61,7 +60,6 @@
         };
 
         function App() {
-            const boardRef = useRef(null); // 📍 도장판 영역 참조를 위한 Ref
             const [album, setAlbum] = useState(() => JSON.parse(localStorage.getItem('sb_album') || '[]'));
             const [currentBoard, setCurrentBoard] = useState(() => {
                 const params = new URLSearchParams(window.location.search);
@@ -108,29 +106,6 @@
                     .then(() => alert("공유 링크가 복사되었습니다!"));
             };
 
-            // 📍 이미지로 저장하는 함수
-            const downloadImage = () => {
-                if (!boardRef.current) return;
-                
-                // 캡처 시 삭제 버튼(X)들을 잠시 숨기기 위해 스타일 조작
-                const xButtons = boardRef.current.querySelectorAll('.delete-btn');
-                xButtons.forEach(btn => btn.style.display = 'none');
-
-                html2canvas(boardRef.current, {
-                    backgroundColor: null,
-                    useCORS: true, // 외부 포스터 이미지 허용
-                    scale: 2 // 고화질 저장
-                }).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `${currentBoard.title}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                    
-                    // 다시 X 버튼 보이게 복구
-                    xButtons.forEach(btn => btn.style.display = 'flex');
-                });
-            };
-
             const saveToAlbum = () => {
                 setAlbum([...album.filter(b => b.id !== currentBoard.id), currentBoard]);
                 alert("앨범에 저장 완료!");
@@ -156,6 +131,7 @@
                 const currentCount = currentBoard.slots.length;
                 let newSlots = [...currentBoard.slots];
                 let newDones = [...currentBoard.dones];
+
                 if (newCount > currentCount) {
                     const diff = newCount - currentCount;
                     newSlots = [...newSlots, ...Array(diff).fill(null)];
@@ -182,34 +158,37 @@
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-10 items-start justify-center w-full">
-                        <div className="flex md:flex-col gap-6 order-2 md:order-1 w-full md:w-56 items-center md:items-start p-4 bg-gray-50 rounded-xl border-2 border-black/5 shadow-sm">
-                            <div className="flex flex-col w-full gap-1">
-                                <label className="text-[10px] font-bold uppercase text-gray-400 flex justify-between">
+                        {/* 📍 설정 사이드바: 세로 정렬 및 순서 조정 */}
+                        <div className="flex flex-col gap-8 order-2 md:order-1 w-full md:w-56 p-6 bg-gray-50 rounded-xl border-2 border-black/5 shadow-sm">
+                            <div className="flex flex-col w-full gap-2">
+                                <label className="text-xs font-bold uppercase text-gray-400 flex justify-between">
                                     <span>Slot Count</span>
                                     <span className="text-black">{currentBoard.slots.length}</span>
                                 </label>
                                 <input type="range" min="9" max="25" step="1" value={currentBoard.slots.length} onChange={(e) => changeSlotCount(parseInt(e.target.value))} className="w-full cursor-pointer" />
                             </div>
 
-                            <div className="flex flex-col items-center md:items-start gap-1">
-                                <label className="text-[10px] font-bold uppercase text-gray-400">Board Color</label>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase text-gray-400">Board Color</label>
                                 <div className="palette-box" style={{ backgroundColor: currentBoard.color }}>
                                     <input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} />
                                 </div>
                             </div>
-                            <div className="flex flex-col items-center md:items-start gap-1">
-                                <label className="text-[10px] font-bold uppercase text-gray-400">Stamp Color</label>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold uppercase text-gray-400">Stamp Color</label>
                                 <div className="palette-box" style={{ backgroundColor: currentBoard.stampColor }}>
                                     <input type="color" value={currentBoard.stampColor} onChange={(e) => setCurrentBoard({...currentBoard, stampColor: e.target.value})} />
                                 </div>
                             </div>
-                            <div className="flex flex-col items-center md:items-start gap-2">
-                                <label className="text-[10px] font-bold uppercase text-gray-400">Stamp Style</label>
-                                <div className="flex flex-row gap-3">
-                                    <input className="w-11 h-11 bg-white border-2 border-black rounded-lg text-center font-bold text-xl font-gaegu" style={{ color: currentBoard.stampColor }} value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
-                                    <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-md border border-black/10">
+
+                            <div className="flex flex-col gap-3">
+                                <label className="text-xs font-bold uppercase text-gray-400">Stamp Style</label>
+                                <div className="flex flex-col gap-3">
+                                    <input className="w-full h-12 bg-white border-2 border-black rounded-lg text-center font-bold text-2xl font-gaegu" style={{ color: currentBoard.stampColor }} value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} placeholder="글자" />
+                                    <div className="grid grid-cols-4 gap-2 bg-white p-2 rounded-md border border-black/10">
                                         {ICON_SUGGESTIONS.map(item => (
-                                            <button key={item.id} onClick={() => setCurrentBoard({...currentBoard, stamp: item.icon, isIconMode: true})} className={`w-7 h-7 flex items-center justify-center rounded transition-all ${currentBoard.isIconMode && currentBoard.stamp === item.icon ? 'bg-black text-white' : 'hover:bg-gray-100 text-gray-300'}`}><i data-lucide={item.icon} className="w-4 h-4"></i></button>
+                                            <button key={item.id} onClick={() => setCurrentBoard({...currentBoard, stamp: item.icon, isIconMode: true})} className={`w-full aspect-square flex items-center justify-center rounded transition-all ${currentBoard.isIconMode && currentBoard.stamp === item.icon ? 'bg-black text-white' : 'hover:bg-gray-100 text-gray-300'}`}><i data-lucide={item.icon} className="w-5 h-5"></i></button>
                                         ))}
                                     </div>
                                 </div>
@@ -217,8 +196,7 @@
                         </div>
 
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl">
-                            {/* 📍 Ref를 사용하여 도장판 영역만 감쌈 */}
-                            <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-8 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[1deg]">
+                            <div style={{ backgroundColor: currentBoard.color }} className="p-8 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[1deg]">
                                 <input className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: dynamicTextColor }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-6 mt-2">
@@ -228,7 +206,7 @@
 
                                 <div className={`grid gap-4 ${getGridCols(currentBoard.slots.length)}`}>
                                     {currentBoard.slots.map((slot, i) => (
-                                        <Slot key={i} data={slot} isDone={currentBoard.dones[i]} idx={i} stamp={currentBoard.stamp} stampColor={currentBoard.stampColor} isIconMode={currentBoard.isIconMode} onToggle={() => { const newDones = [...currentBoard.dones]; newDones[i] = !newDones[i]; setCurrentBoard({...currentBoard, dones: newDones}); }} onSearch={() => { setActiveIndex(i); setIsSearchOpen(true); }} onClear={(e) => clearSlot(i, e)} />
+                                        <Slot key={i} data={slot} isDone={currentBoard.dones[i]} idx={i} stamp={currentBoard.stamp} stampColor={currentBoard.stampColor} isIconMode={currentBoard.isIconMode} totalSlots={currentBoard.slots.length} onToggle={() => { const newDones = [...currentBoard.dones]; newDones[i] = !newDones[i]; setCurrentBoard({...currentBoard, dones: newDones}); }} onSearch={() => { setActiveIndex(i); setIsSearchOpen(true); }} onClear={(e) => clearSlot(i, e)} />
                                     ))}
                                 </div>
                             </div>
@@ -236,11 +214,9 @@
                     </div>
 
                     <div className="w-full max-w-2xl mt-16 flex flex-col gap-8 text-center">
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 gap-6">
                             <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold border-2 border-black font-gaegu text-xl">ALBUM SAVE</button>
-                            <button onClick={shareLink} className="doodle-button bg-white py-4 font-bold border-2 border-black font-gaegu text-xl">SHARE LINK</button>
-                            {/* 📍 이미지 저장 버튼 추가 */}
-                            <button onClick={downloadImage} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl">SAVE IMAGE</button>
+                            <button onClick={shareLink} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl text-center">SHARE LINK</button>
                         </div>
 
                         <div className="bg-gray-100 p-6 doodle-border border-2 border-black">
@@ -283,24 +259,34 @@
             );
         }
 
-        function Slot({ data, isDone, onToggle, onSearch, onClear, stamp, stampColor, isIconMode, idx }) {
+        function Slot({ data, isDone, onToggle, onSearch, onClear, stamp, stampColor, isIconMode, idx, totalSlots }) {
             const randomRotate = [ -1.5, 1.2, -0.8, 1.5, -1.1, 0.9 ][idx % 6];
+            // 슬롯 개수에 따른 가변 폰트 크기 계산 (25개일 때 더 작게)
+            const fontSizeClass = totalSlots > 16 ? 'text-[11px]' : 'text-[14px]';
+            const iconSizeClass = totalSlots > 16 ? 'w-3 h-3' : 'w-4 h-4';
+
             return (
                 <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${randomRotate}deg)` }} className="relative aspect-[3/4] bg-white border-2 border-black overflow-hidden cursor-pointer hover:scale-105 transition-transform shadow-[2px_2px_0px_#000]">
                     {data ? (
                         <>
-                            {/* 📍 delete-btn 클래스 추가 (캡처 시 숨기기 위함) */}
-                            <button onClick={onClear} className="delete-btn absolute top-1 right-1 w-5 h-5 bg-black/80 text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 hover:bg-red-600 transition-colors">×</button>
+                            <button onClick={onClear} className="absolute top-1 right-1 w-5 h-5 bg-black/80 text-white rounded-full flex items-center justify-center text-[10px] font-bold z-20 hover:bg-red-600 transition-colors">×</button>
                             
                             <img src={data.poster} className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 opacity-100' : 'grayscale opacity-25'}`} />
+                            
+                            {/* 📍 텍스트 및 아이콘 정렬 수정 */}
                             {!isDone && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-between p-2 text-center">
-                                    <div className="text-[13px] font-bold leading-tight text-black line-clamp-3 font-gaegu pt-1 drop-shadow-sm">{data.title}</div>
-                                    <div className="flex gap-0.5 justify-center pb-1">
-                                        {data.ott?.map((logoUrl, i) => (<img key={i} src={logoUrl} className="w-4 h-4 rounded shadow-md border border-black/10" />))}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-white/40">
+                                    <div className={`${fontSizeClass} font-bold leading-tight text-black line-clamp-3 font-gaegu mb-2 drop-shadow-sm`}>
+                                        {data.title}
+                                    </div>
+                                    <div className="flex gap-1 justify-center">
+                                        {data.ott?.map((logoUrl, i) => (
+                                            <img key={i} src={logoUrl} className={`${iconSizeClass} rounded-sm shadow-md border border-black/10`} />
+                                        ))}
                                     </div>
                                 </div>
                             )}
+
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
                                     <div className="border-[3px] font-gaegu font-black text-2xl p-1 bg-white shadow-lg flex items-center justify-center min-w-[35px] min-h-[35px] rotate-[-10deg]" style={{ borderColor: stampColor, color: stampColor }}>
