@@ -71,17 +71,7 @@
                 if (sharedData) {
                     try { 
                         const parsed = JSON.parse(decodeURIComponent(atob(sharedData)));
-                        return {
-                            id: Date.now(),
-                            title: parsed.title || "나의 정복 리스트",
-                            author: parsed.author || "YOUR NAME",
-                            color: parsed.color || "#fefefe", 
-                            stamp: parsed.stamp || "完",
-                            stampColor: parsed.stampColor || "#e11d48",
-                            isIconMode: !!parsed.isIconMode,
-                            slots: parsed.slots || Array(16).fill(null),
-                            dones: Array((parsed.slots || []).length || 16).fill(false)
-                        };
+                        return { ...parsed, id: Date.now() };
                     } catch(e) { console.error(e); }
                 }
                 return {
@@ -97,67 +87,41 @@
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, results, isSearchOpen, album]);
             useEffect(() => { localStorage.setItem('sb_album', JSON.stringify(album)); }, [album]);
 
-            // --- 물리적 여백을 강제 확보한 이미지 다운로드 함수 ---
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
-
                 try {
                     await document.fonts.ready;
                     const element = boardRef.current;
-                    
                     const options = {
                         useCORS: true,
                         allowTaint: false,
                         scale: 2,
                         backgroundColor: "#ffffff",
-                        logging: false,
-                        // 캡처 윈도우 크기를 넉넉하게 고정
-                        windowWidth: element.scrollWidth + 200,
-                        windowHeight: element.scrollHeight + 200,
+                        windowWidth: 1200,
+                        windowHeight: 1200,
                         onclone: (clonedDoc) => {
-                            // 1. 클론 문서 내에서 타겟 보드 찾기
                             const clonedBoard = clonedDoc.querySelector('.board-to-export');
                             if (!clonedBoard) return;
-
-                            // 2. 삭제 버튼 제거
-                            const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
-                            deleteBtns.forEach(btn => btn.style.display = 'none');
-
-                            // 3. 잘림 방지 핵심: 부모 요소에 거대한 여백과 배경색 입히기
+                            clonedDoc.querySelectorAll('.delete-btn').forEach(btn => btn.style.display = 'none');
                             const parent = clonedBoard.parentElement;
                             parent.style.padding = "60px";
                             parent.style.display = "inline-block";
                             parent.style.backgroundColor = "#ffffff";
-                            
-                            // 4. 회전 및 위치 보정
                             clonedBoard.style.transform = "none"; 
                             clonedBoard.style.margin = "0 auto";
                             clonedBoard.style.boxShadow = "8px 8px 0px #000";
-
-                            // 5. 텍스트 뭉개짐 방지 (Gaegu 폰트 명시)
-                            const textElements = clonedDoc.querySelectorAll('input, div, p, span');
-                            textElements.forEach(el => {
+                            clonedDoc.querySelectorAll('input, div, p, span').forEach(el => {
                                 el.style.fontFamily = "'Gaegu', cursive";
                                 el.style.letterSpacing = "0px";
                             });
                         }
                     };
-
-                    // 부모 요소를 캡처 대상으로 삼아 여백을 포함시킴
                     const canvas = await html2canvas(element, options);
-                    const image = canvas.toDataURL("image/png", 1.0);
-                    
                     const link = document.createElement("a");
-                    link.href = image;
-                    link.download = `${currentBoard.title || 'stamp-board'}.png`;
-                    document.body.appendChild(link);
+                    link.href = canvas.toDataURL("image/png", 1.0);
+                    link.download = `${currentBoard.title}.png`;
                     link.click();
-                    document.body.removeChild(link);
-                    
-                } catch (err) {
-                    console.error("Export Error:", err);
-                    alert("이미지 저장 중 문제가 발생했습니다.");
-                }
+                } catch (err) { console.error(err); }
             };
 
             const fetchSearchResults = async (q) => {
@@ -175,7 +139,7 @@
             };
 
             const saveToAlbum = () => {
-                const newAlbum = [...album.filter(b => b.id !== currentBoard.id), currentBoard];
+                const newAlbum = [...album.filter(b => b.id !== currentBoard.id), { ...currentBoard, id: Date.now() }];
                 setAlbum(newAlbum);
                 alert("앨범에 저장되었습니다!");
             };
@@ -231,7 +195,6 @@
                             </div>
                         </div>
 
-                        {/* boardRef를 감싸는 부모 div가 캡처 시 여백의 바탕이 됨 */}
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl overflow-visible" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
                                 <div className="py-4 mb-2">
@@ -241,7 +204,6 @@
                                     <span style={{ color: getContrastColor(currentBoard.color) }}>Created by</span>
                                     <input className="bg-transparent border-b border-dashed border-black/30 w-24 text-center font-gaegu text-lg" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
                                 </div>
-
                                 <div className={`grid gap-4 ${currentBoard.slots.length <= 11 ? 'grid-cols-3' : currentBoard.slots.length <= 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                                     {currentBoard.slots.map((slot, i) => (
                                         <Slot key={i} data={slot} isDone={currentBoard.dones[i]} idx={i} stamp={currentBoard.stamp} stampColor={currentBoard.stampColor} isIconMode={currentBoard.isIconMode} onToggle={() => { const newDones = [...currentBoard.dones]; newDones[i] = !newDones[i]; setCurrentBoard({...currentBoard, dones: newDones}); }} onSearch={() => { setActiveIndex(i); setIsSearchOpen(true); }} onClear={(e) => { e.stopPropagation(); const newSlots = [...currentBoard.slots]; newSlots[i] = null; setCurrentBoard({...currentBoard, slots: newSlots}); }} />
@@ -256,20 +218,28 @@
                             <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
                             <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
-                                const dataToShare = {
-                                    title: currentBoard.title,
-                                    author: currentBoard.author,
-                                    color: currentBoard.color,
-                                    stamp: currentBoard.stamp,
-                                    stampColor: currentBoard.stampColor,
-                                    isIconMode: currentBoard.isIconMode,
-                                    slots: currentBoard.slots
-                                };
-                                const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
-                                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`)
-                                    .then(() => alert("공유 링크 복사 완료!"));
+                                const dataToShare = { title: currentBoard.title, author: currentBoard.author, color: currentBoard.color, stamp: currentBoard.stamp, stampColor: currentBoard.stampColor, isIconMode: currentBoard.isIconMode, slots: currentBoard.slots };
+                                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${btoa(encodeURIComponent(JSON.stringify(dataToShare)))}`).then(() => alert("링크 복사 완료!"));
                             }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
+
+                        {/* --- 앨범 섹션 복구 --- */}
+                        {album.length > 0 && (
+                            <div className="bg-gray-100 p-6 doodle-border border-2 border-black">
+                                <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-left">My Collections ({album.length})</h2>
+                                <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                    {album.map(b => (
+                                        <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-50 hover:opacity-100'}`}>
+                                            <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(item => item.id !== b.id)); }} className="absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">×</button>
+                                            <div className="flex-grow flex items-center justify-center">
+                                                <div className="font-gaegu text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}</div>
+                                            </div>
+                                            <div className="text-[14px] font-bold truncate font-gaegu text-center border-t border-black/5 pt-1">{b.title}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {isSearchOpen && (
