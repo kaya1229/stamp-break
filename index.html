@@ -114,16 +114,7 @@
             return (
                 <div className="max-w-4xl mx-auto p-6 flex flex-col items-center pb-40">
                     <header className="py-8 flex justify-between items-end w-full max-w-2xl border-b-4 border-black mb-12">
-                        <div>
-                            <h1 className="text-5xl font-bold italic rotate-[-2deg] font-gaegu leading-none">STAMP BREAK</h1>
-                            <div className="mt-4 flex items-center gap-2 text-sm font-bold text-gray-500">
-                                <span>Created by</span>
-                                <input 
-                                    className="bg-transparent border-b-2 border-dashed border-gray-400 focus:border-black w-32 px-1 text-black font-gaegu text-lg"
-                                    value={currentBoard.author}
-                                    onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
-                                />
-                            </div>
+                        
                         </div>
                         <button onClick={() => setCurrentBoard({...currentBoard, id: Date.now(), title: "새로운 판", slots: Array(16).fill(null), dones: Array(16).fill(false)})} 
                                 className="doodle-button bg-gray-100 px-4 py-2 text-xs font-bold border-2 border-black font-gaegu text-base">+ NEW BOARD</button>
@@ -176,6 +167,16 @@
                                     value={currentBoard.title}
                                     onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})}
                                 />
+                                <div>
+                            <h1 className="text-5xl font-bold italic rotate-[-2deg] font-gaegu leading-none">STAMP BREAK</h1>
+                            <div className="mt-4 flex items-center gap-2 text-sm font-bold text-gray-500">
+                                <span>Created by</span>
+                                <input 
+                                    className="bg-transparent border-b-2 border-dashed border-gray-400 focus:border-black w-32 px-1 text-black font-gaegu text-lg"
+                                    value={currentBoard.author}
+                                    onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})}
+                                />
+                            </div>
                                 <div className="grid grid-cols-4 gap-4">
                                     {currentBoard.slots.map((slot, i) => (
                                         <Slot 
@@ -257,14 +258,14 @@
                                     {/* 🔥 OTT 아이콘 다시 추가 */}
                                     <div className="flex gap-1 justify-center pb-2">
                                         {data.ott?.map((logoUrl, i) => (
-                                            <img key={i} src={logoUrl} className="w-4 h-4 rounded shadow-md border border-black/10" />
+                                            <img key={i} src={logoUrl} className="w-6 h-6 rounded shadow-md border border-black/10" />
                                         ))}
                                     </div>
                                 </div>
                             )}
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
-                                    <div className="border-[3px] font-gaegu font-black text-4xl p-1 bg-white shadow-lg flex items-center justify-center min-w-[50px] min-h-[50px] rotate-[-10deg]"
+                                    <div className="border-[4px] font-gaegu font-black text-4xl p-2 bg-white shadow-lg flex items-center justify-center min-w-[50px] min-h-[50px] rotate-[-10deg]"
                                          style={{ borderColor: stampColor, color: stampColor }}>
                                         {isIconMode ? <i data-lucide={stamp} className="w-8 h-8 stroke-[3px]"></i> : <span>{stamp}</span>}
                                     </div>
