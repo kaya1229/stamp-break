@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도장격파 : 마스터 에디션</title>
+    <title>도장격파 : 얼티밋 에디션</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -19,10 +19,10 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #1a1a1a; border-radius: 50%; cursor: pointer; border: 1px solid #000; }
 
         @keyframes stamp-bang {
-            0% { transform: scale(5) rotate(-45deg); opacity: 0; }
-            100% { transform: scale(1.2) rotate(-15deg); opacity: 0.9; }
+            0% { transform: scale(4) rotate(-45deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-15deg); opacity: 0.85; }
         }
-        .animate-stamp { animation: stamp-bang 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animate-stamp { animation: stamp-bang 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
         .doodle-border { border: 2.5px solid #1a1a1a; border-radius: 255px 15px 225px 15px/15px 225px 15px 255px; }
         .doodle-button { border: 2px solid #1a1a1a; border-radius: 10px 20px 10px 25px/15px 10px 25px 12px; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -32,6 +32,8 @@
         .palette-box input[type="color"] { position: absolute; top: -10px; left: -10px; width: 200%; height: 200%; cursor: pointer; opacity: 0; }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
+        
+        .ott-logo { width: 14px; height: 14px; border-radius: 2px; object-fit: contain; background: white; padding: 1px; }
     </style>
 </head>
 <body>
@@ -46,6 +48,13 @@
             { id: 'check', icon: 'check' }, { id: 'heart', icon: 'heart' },
             { id: 'star', icon: 'star' }, { id: 'award', icon: 'award' },
             { id: 'zap', icon: 'zap' }, { id: 'smile', icon: 'smile' }
+        ];
+
+        const OTT_LOGOS = [
+            "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+            "https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",
+            "https://upload.wikimedia.org/wikipedia/commons/b/bb/Tving_logo.svg",
+            "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_TV_Plus_Logo.svg"
         ];
 
         const getContrastColor = (hex) => {
@@ -104,16 +113,16 @@
 
                     <main className="w-full">
                         <div style={{ backgroundColor: currentBoard.color }} className="p-6 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000]">
-                            <div className="mb-10 flex flex-col items-center">
+                            <div className="mb-14 flex flex-col items-center">
                                 <input 
-                                    className="bg-transparent text-5xl md:text-7xl font-bold w-full text-center outline-none font-gaegu border-b-4 border-dashed" 
-                                    style={{ color: textColor, borderBottomColor: textColor + '44' }}
+                                    className="bg-transparent text-5xl md:text-7xl font-bold w-full text-center outline-none font-gaegu pb-6 mb-2" 
+                                    style={{ color: textColor, borderBottom: `4px dashed ${textColor}44` }}
                                     value={currentBoard.title} 
                                     onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} 
                                 />
-                                <div className="flex items-center text-2xl md:text-3xl font-bold opacity-80 mt-4 font-gaegu" style={{ color: textColor }}>
-                                    <span className="mr-2 italic opacity-60">Created by</span>
-                                    <input className="bg-transparent border-b border-dashed border-current w-40 text-center" value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value})} />
+                                <div className="flex items-center text-xl md:text-2xl font-bold opacity-80 mt-2 font-gaegu" style={{ color: textColor }}>
+                                    <span className="mr-2 italic opacity-60">만든 이 : </span>
+                                    <input className="bg-transparent border-b border-dashed border-current w-32 text-center" value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value})} />
                                 </div>
                             </div>
                             
@@ -125,8 +134,8 @@
                         </div>
                     </main>
 
-                    {/* 설정 툴바 (재배치) */}
-                    <section className="w-full mt-10 p-8 bg-gray-50 rounded-3xl border-2 border-black/10 flex flex-col gap-8 shadow-sm">
+                    {/* 설정 툴바 */}
+                    <section className="w-full mt-10 p-8 bg-gray-50 rounded-3xl border-2 border-black/10 flex flex-col gap-8">
                         <div className="w-full flex flex-col gap-2">
                             <label className="text-sm font-bold text-gray-500 uppercase font-gaegu ml-1">Board Size: {currentBoard.slots.length} Slots</label>
                             <input type="range" min="9" max="25" value={currentBoard.slots.length} onChange={(e) => {
@@ -141,25 +150,25 @@
                             }} />
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-6">
-                            <div className="flex gap-8">
-                                <div className="flex flex-col gap-2 items-center">
-                                    <label className="text-[14px] font-bold text-gray-500 uppercase font-gaegu">Board</label>
+                        <div className="flex flex-wrap items-center justify-between gap-6 h-16">
+                            <div className="flex gap-8 h-full items-center">
+                                <div className="flex flex-col gap-1 items-center">
+                                    <label className="text-[12px] font-bold text-gray-400 font-gaegu">Board</label>
                                     <div className="palette-box" style={{ backgroundColor: currentBoard.color }}><input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} /></div>
                                 </div>
-                                <div className="flex flex-col gap-2 items-center">
-                                    <label className="text-[14px] font-bold text-gray-500 uppercase font-gaegu">Stamp</label>
+                                <div className="flex flex-col gap-1 items-center">
+                                    <label className="text-[12px] font-bold text-gray-400 font-gaegu">Stamp</label>
                                     <div className="palette-box" style={{ backgroundColor: currentBoard.stampColor }}><input type="color" value={currentBoard.stampColor} onChange={(e) => setCurrentBoard({...currentBoard, stampColor: e.target.value})} /></div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-2 items-center">
-                                <label className="text-[14px] font-bold text-gray-500 uppercase font-gaegu self-start ml-1">Stamp Style</label>
-                                <div className="flex items-center gap-3">
-                                    <input className="w-11 h-11 bg-white border-2 border-black rounded-xl text-center font-bold text-2xl font-gaegu" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
-                                    <div className="flex gap-1.5 bg-white p-1.5 rounded-xl border border-black/10">
+                            <div className="flex flex-col gap-1 items-center h-full">
+                                <label className="text-[12px] font-bold text-gray-400 font-gaegu self-start">Stamp Style</label>
+                                <div className="flex items-center gap-2">
+                                    <input className="w-10 h-10 bg-white border-2 border-black rounded-lg text-center font-bold text-xl font-gaegu" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
+                                    <div className="flex gap-1 bg-white p-1 rounded-lg border border-black/10">
                                         {ICON_SUGGESTIONS.map(item => (
-                                            <button key={item.id} onClick={() => setCurrentBoard({...currentBoard, stamp: item.icon, isIconMode: true})} className={`w-9 h-9 flex items-center justify-center rounded-lg ${currentBoard.isIconMode && currentBoard.stamp === item.icon ? 'bg-black text-white' : 'text-gray-300'}`}><i data-lucide={item.icon} className="w-5 h-5"></i></button>
+                                            <button key={item.id} onClick={() => setCurrentBoard({...currentBoard, stamp: item.icon, isIconMode: true})} className={`w-8 h-8 flex items-center justify-center rounded ${currentBoard.isIconMode && currentBoard.stamp === item.icon ? 'bg-black text-white' : 'text-gray-300'}`}><i data-lucide={item.icon} className="w-4 h-4"></i></button>
                                         ))}
                                     </div>
                                 </div>
@@ -195,15 +204,15 @@
 
                     {/* 검색 모달 */}
                     {isSearchOpen && (
-                        <div className="fixed inset-0 bg-white/95 z-50 p-6 flex flex-col items-center backdrop-blur-sm">
+                        <div className="fixed inset-0 bg-white/95 z-50 p-6 flex flex-col items-center backdrop-blur-sm font-gaegu">
                             <div className="w-full max-w-md">
-                                <div className="flex justify-between items-center mb-8 font-gaegu text-4xl font-black"><span>SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl">&times;</button></div>
-                                <input className="w-full bg-white p-5 border-4 border-black text-2xl mb-8 font-bold doodle-border font-gaegu" placeholder="제목을 입력하세요..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
+                                <div className="flex justify-between items-center mb-8 text-4xl font-black"><span>SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl">&times;</button></div>
+                                <input className="w-full bg-white p-5 border-4 border-black text-2xl mb-8 font-bold doodle-border" placeholder="제목을 입력하세요..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
                                 <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] custom-scrollbar">
                                     {results.map(d => (
                                         <div key={d.id} onClick={() => { const newSlots = [...currentBoard.slots]; newSlots[activeIndex] = { title: d.name || d.title, poster: IMAGE_BASE + d.poster_path }; setCurrentBoard({...currentBoard, slots: newSlots}); setIsSearchOpen(false); }} className="cursor-pointer text-center bg-white p-1 border-2 border-black doodle-border">
                                             <img src={IMAGE_BASE + d.poster_path} className="w-full aspect-[2/3] object-cover mb-1" />
-                                            <p className="text-[12px] font-bold font-gaegu line-clamp-1">{d.name || d.title}</p>
+                                            <p className="text-[14px] font-bold line-clamp-1">{d.name || d.title}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -220,22 +229,21 @@
                 <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${rotate}deg)` }} className="relative aspect-[3/4] bg-white border-2 border-black overflow-hidden cursor-pointer shadow-[3px_3px_0px_#000] group">
                     {data ? (
                         <>
-                            <button onClick={onClear} className="absolute top-0 right-2 text-2xl font-bold text-white/80 hover:text-white z-20 transition-colors drop-shadow-md">×</button>
+                            <button onClick={onClear} className="absolute top-0 right-1.5 text-2xl font-bold text-white z-20 transition-colors drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">×</button>
                             <img src={data.poster} className={`w-full h-full object-cover transition-all ${isDone ? 'opacity-100' : 'opacity-20 grayscale'}`} />
                             
-                            {/* OTT 배지 (부활) */}
-                            <div className="absolute bottom-1 left-1 flex gap-0.5 opacity-80 z-10">
-                                <div className="w-3 h-3 bg-red-600 rounded-sm"></div>
-                                <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                                <div className="w-3 h-3 bg-black rounded-sm border border-white/20"></div>
+                            <div className="absolute bottom-1.5 left-1.5 flex gap-1 z-10">
+                                {OTT_LOGOS.map((url, i) => (
+                                    <img key={i} src={url} className="ott-logo shadow-sm" />
+                                ))}
                             </div>
 
-                            {!isDone && <div className="absolute inset-0 flex items-center justify-center p-3 text-center text-xl font-bold font-gaegu leading-tight tracking-tight">{data.title}</div>}
+                            {!isDone && <div className="absolute inset-0 flex items-center justify-center p-3 text-center text-2xl font-bold font-gaegu leading-tight tracking-tight">{data.title}</div>}
                             
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none z-30">
-                                    <div className="border-[3px] flex items-center justify-center w-[80%] h-[60%] rotate-[-12deg] bg-transparent" style={{ borderColor: stampColor }}>
-                                        <div className="font-gaegu font-black text-4xl md:text-5xl" style={{ color: stampColor }}>
+                                    <div className="border-[3px] flex items-center justify-center p-2 rotate-[-5deg] bg-transparent" style={{ borderColor: stampColor }}>
+                                        <div className="font-gaegu font-black text-4xl md:text-5xl leading-none" style={{ color: stampColor }}>
                                             {isIconMode ? <i data-lucide={stamp} className="w-10 h-10 stroke-[4px]"></i> : <span>{stamp}</span>}
                                         </div>
                                     </div>
