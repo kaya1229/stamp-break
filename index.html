@@ -16,7 +16,6 @@
         .font-gaegu { font-family: 'Gaegu', cursive; }
         input:focus { outline: none; }
         
-        /* 슬라이더 검은색 테마 */
         input[type=range] { -webkit-appearance: none; background: #e5e7eb; border-radius: 10px; height: 6px; border: 1px solid #1a1a1a; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #1a1a1a; border-radius: 50%; cursor: pointer; border: 1px solid #000; }
 
@@ -70,7 +69,21 @@
                 const params = new URLSearchParams(window.location.search);
                 const sharedData = params.get('data');
                 if (sharedData) {
-                    try { return JSON.parse(decodeURIComponent(atob(sharedData))); } catch(e) { console.error(e); }
+                    try { 
+                        const parsed = JSON.parse(decodeURIComponent(atob(sharedData)));
+                        // 공유받은 데이터에서 핵심 정보만 추출하고 앨범/성공여부는 제외
+                        return {
+                            id: Date.now(),
+                            title: parsed.title || "나의 정복 리스트",
+                            author: parsed.author || "YOUR NAME",
+                            color: parsed.color || "#fefefe", 
+                            stamp: parsed.stamp || "完",
+                            stampColor: parsed.stampColor || "#e11d48",
+                            isIconMode: !!parsed.isIconMode,
+                            slots: parsed.slots || Array(16).fill(null),
+                            dones: Array((parsed.slots || []).length || 16).fill(false)
+                        };
+                    } catch(e) { console.error(e); }
                 }
                 return {
                     id: Date.now(), title: "나의 정복 리스트", author: "YOUR NAME", color: "#fefefe", 
@@ -88,17 +101,13 @@
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
                 await document.fonts.ready;
-
                 const options = {
                     useCORS: true,
                     scale: 2,
                     backgroundColor: "#ffffff",
                     onclone: (clonedDoc) => {
-                        // 1. 이미지 저장 시 삭제 버튼 숨기기
                         const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
                         deleteBtns.forEach(btn => btn.style.display = 'none');
-                        
-                        // 2. 제목 잘림 방지를 위한 스타일 보정
                         const board = clonedDoc.querySelector('.board-to-export');
                         if (board) {
                             board.style.transform = "none";
@@ -106,7 +115,6 @@
                         }
                     }
                 };
-
                 html2canvas(boardRef.current, options).then(canvas => {
                     const link = document.createElement("a");
                     link.href = canvas.toDataURL("image/png", 1.0);
@@ -145,7 +153,6 @@
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-10 items-start justify-center w-full">
-                        {/* 설정 사이드바 */}
                         <div className="flex flex-col gap-6 order-2 md:order-1 w-full md:w-64 p-6 bg-gray-50 rounded-xl border-2 border-black/5">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-gray-400 flex justify-between uppercase"><span>Slot Count</span><span className="text-black">{currentBoard.slots.length}</span></label>
@@ -187,10 +194,9 @@
                             </div>
                         </div>
 
-                        {/* 도장판 */}
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
-                                <div className="py-4 mb-2"> {/* 제목 짤림 방지용 패딩 */}
+                                <div className="py-4 mb-2">
                                     <input className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 </div>
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-8">
@@ -207,34 +213,25 @@
                         </div>
                     </div>
 
-                    {/* 하단 버튼 및 앨범 섹션 (복구 완료) */}
                     <div className="w-full max-w-2xl mt-16 flex flex-col gap-10">
                         <div className="grid grid-cols-3 gap-4">
                             <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
                             <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
-    // 공유할 데이터에서 불필요한 정보(앨범 등)를 제외하고 필요한 필드만 명시적으로 추출
-    const dataToShare = {
-        id: Date.now(), // 새로운 ID 부여 (받는 사람 기준)
-        title: currentBoard.title,
-        author: currentBoard.author,
-        color: currentBoard.color,
-        stamp: currentBoard.stamp,
-        stampColor: currentBoard.stampColor,
-        isIconMode: currentBoard.isIconMode,
-        slots: currentBoard.slots, // 슬롯 데이터(영화/드라마 정보)는 포함
-        dones: Array(currentBoard.slots.length).fill(false) // 달성 상태는 항상 초기화
-    };
-    
-    // 데이터를 Base64로 인코딩
-    const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
-    
-    // 클립보드 복사
-    navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`)
-        .then(() => alert("공유 링크 복사 완료! (달성 상태와 개인 앨범은 제외됩니다.)"));
-}} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">
-    SHARE LINK
-</button>
+                                // 전송할 데이터에서 개인 앨범(album)과 달성 상태(dones)를 완전히 배제
+                                const dataToShare = {
+                                    title: currentBoard.title,
+                                    author: currentBoard.author,
+                                    color: currentBoard.color,
+                                    stamp: currentBoard.stamp,
+                                    stampColor: currentBoard.stampColor,
+                                    isIconMode: currentBoard.isIconMode,
+                                    slots: currentBoard.slots
+                                };
+                                const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
+                                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`)
+                                    .then(() => alert("공유 링크 복사 완료! (내 앨범 정보는 포함되지 않습니다.)"));
+                            }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
 
                         {album.length > 0 && (
@@ -255,7 +252,6 @@
                         )}
                     </div>
 
-                    {/* 검색 팝업 */}
                     {isSearchOpen && (
                         <div className="fixed inset-0 bg-white/95 z-50 p-6 flex flex-col items-center backdrop-blur-sm">
                             <div className="w-full max-w-md">
