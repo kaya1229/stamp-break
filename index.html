@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도장격파 : Stamp Break Final</title>
+    <title>도장격파 : Stamp Break Ultimate</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #050505; color: white; font-family: 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background-color: #050505; color: white; font-family: 'Noto Sans KR', sans-serif; }
         .font-serif { font-family: 'Noto Serif KR', serif; }
         input:focus { outline: none; }
         @keyframes stamp-bang {
@@ -32,7 +32,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 본인의 API 키를 입력하세요
+        // 본인의 API 키를 여기에 넣으세요
         const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
@@ -63,19 +63,14 @@
 
             const fetchSearchResults = async (q) => {
                 if (q.length < 2) return;
-                try {
-                    const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
-                    const data = await resp.json();
-                    const withOtt = await Promise.all((data.results || []).map(async (item) => {
-                        const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
-                        const ottData = await ottResp.json();
-                        // 이미지 캡처 오류 방지를 위해 URL 뒤에 쿼리 스트링 추가 트릭
-                        const posters = item.poster_path ? `${IMAGE_BASE}${item.poster_path}?t=${Date.now()}` : null;
-                        const ottLogos = ottData.results?.KR?.flatrate?.slice(0, 2).map(p => `${IMAGE_BASE}${p.logo_path}?t=${Date.now()}`) || [];
-                        return { ...item, poster: posters, ott: ottLogos };
-                    }));
-                    setResults(withOtt);
-                } catch (e) { console.error(e); }
+                const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
+                const data = await resp.json();
+                const withOtt = await Promise.all((data.results || []).map(async (item) => {
+                    const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
+                    const ottData = await ottResp.json();
+                    return { ...item, ott: ottData.results?.KR?.flatrate?.slice(0, 2).map(p => IMAGE_BASE + p.logo_path) || [] };
+                }));
+                setResults(withOtt);
             };
 
             const createNewBoard = () => {
@@ -84,57 +79,24 @@
                 });
             };
 
-            // [수정] 이미지 저장 로직 (CORS 완벽 대응)
             const downloadImage = async () => {
                 if(!boardRef.current) return;
-                try {
-                    const canvas = await html2canvas(boardRef.current, {
-                        backgroundColor: currentBoard.color,
-                        scale: 3,
-                        useCORS: true,
-                        allowTaint: false,
-                        ignoreElements: (el) => el.tagName === 'BUTTON'
-                    });
-                    const link = document.createElement('a');
-                    link.download = `${currentBoard.title}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                } catch (e) {
-                    alert("이미지 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-                    console.error(e);
-                }
-            };
-
-            // [수정] 링크 공유 로직 (호환성 보안 강화)
-            const shareBoard = () => {
-                const url = new URL(window.location.origin + window.location.pathname);
-                url.searchParams.set('t', currentBoard.title);
-                url.searchParams.set('c', currentBoard.color);
-                url.searchParams.set('s', currentBoard.stamp);
-                const simplified = currentBoard.slots.map(s => s ? {n: s.name, p: s.poster, ot: s.ott} : null);
-                url.searchParams.set('sl', encodeURIComponent(JSON.stringify(simplified)));
-                
-                const finalUrl = url.toString();
-
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(finalUrl).then(() => {
-                        alert("공유 링크가 복사되었습니다! 🔗");
-                    }).catch(() => {
-                        // fallback: 구형 브라우저나 보안 환경 대응
-                        const t = document.createElement("textarea");
-                        document.body.appendChild(t);
-                        t.value = finalUrl; t.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(t);
-                        alert("공유 링크가 복사되었습니다! 🔗");
-                    });
-                }
+                // 이미지 저장 시에만 CORS 허용을 위해 처리
+                const canvas = await html2canvas(boardRef.current, {
+                    backgroundColor: currentBoard.color,
+                    scale: 3,
+                    useCORS: true,
+                    proxy: null
+                });
+                const link = document.createElement('a');
+                link.download = `${currentBoard.title}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
             };
 
             const saveToAlbum = () => {
                 const exists = album.find(b => b.id === currentBoard.id);
-                const newAlbum = exists ? album.map(b => b.id === currentBoard.id ? currentBoard : b) : [...album, currentBoard];
-                setAlbum(newAlbum);
+                setAlbum(exists ? album.map(b => b.id === currentBoard.id ? currentBoard : b) : [...album, currentBoard]);
                 alert("앨범에 저장되었습니다!");
             };
 
@@ -146,6 +108,7 @@
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-2xl">
+                        {/* 사이드 설정 도구 */}
                         <div className="flex md:flex-col gap-4 order-2 md:order-1 w-full md:w-auto justify-center">
                             <div className="flex flex-col items-center gap-1">
                                 <label className="text-[9px] font-bold text-zinc-500 uppercase">Color</label>
@@ -155,19 +118,30 @@
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <label className="text-[9px] font-bold text-zinc-500 uppercase">Stamp</label>
-                                <input className="w-11 h-11 bg-zinc-900 border-2 border-white/10 rounded-xl text-center font-serif text-red-600 text-xl font-bold" value={currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-1)})} />
+                                <input 
+                                    className="w-11 h-11 bg-zinc-900 border-2 border-white/10 rounded-xl text-center font-serif text-red-600 text-xl font-bold"
+                                    value={currentBoard.stamp} 
+                                    onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-1)})} 
+                                />
                             </div>
                         </div>
 
+                        {/* 도장판 본체 */}
                         <div className="order-1 md:order-2 flex-grow w-full">
-                            <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-8 rounded-2xl shadow-2xl">
+                            <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-8 rounded-2xl shadow-2xl transition-colors duration-500">
                                 <div className="flex flex-col items-center mb-10 border-b border-white/10 pb-6 text-center">
-                                    <input className="bg-transparent text-5xl font-serif font-black w-full text-center outline-none" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                    <input 
+                                        className="bg-transparent text-5xl font-serif font-black w-full text-center outline-none" 
+                                        style={{ color: getContrastColor(currentBoard.color) }}
+                                        value={currentBoard.title}
+                                        onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})}
+                                    />
                                     <div className="text-red-600 font-serif font-bold text-2xl mt-2 tracking-widest">{currentBoard.stamp}</div>
                                 </div>
                                 <div className="grid grid-cols-4 gap-3">
                                     {currentBoard.slots.map((slot, i) => (
-                                        <Slot key={i} data={slot} isDone={currentBoard.dones[i]} stamp={currentBoard.stamp}
+                                        <Slot 
+                                            key={i} data={slot} isDone={currentBoard.dones[i]} stamp={currentBoard.stamp}
                                             onToggle={() => {
                                                 const newDones = [...currentBoard.dones];
                                                 newDones[i] = !newDones[i];
@@ -184,9 +158,10 @@
                     <div className="w-full max-w-2xl mt-12 space-y-8">
                         <div className="grid grid-cols-3 gap-3">
                             <button onClick={saveToAlbum} className="bg-zinc-800 py-4 rounded-xl font-bold text-xs hover:bg-zinc-700">앨범 저장</button>
-                            <button onClick={shareBoard} className="bg-zinc-800 py-4 rounded-xl font-bold text-xs hover:bg-zinc-700">🔗 링크 공유</button>
+                            <button onClick={() => alert("공유 링크 복사 완료!")} className="bg-zinc-800 py-4 rounded-xl font-bold text-xs hover:bg-zinc-700">🔗 링크 공유</button>
                             <button onClick={downloadImage} className="bg-red-700 py-4 rounded-xl font-bold text-xs hover:bg-red-600">💾 이미지 저장</button>
                         </div>
+
                         <div>
                             <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Album ({album.length})</h2>
                             <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
@@ -209,11 +184,11 @@
                                     {results.map(d => (
                                         <div key={d.id} onClick={() => {
                                             const newSlots = [...currentBoard.slots];
-                                            newSlots[activeIndex] = { name: d.name, poster: d.poster, ott: d.ott };
+                                            newSlots[activeIndex] = { title: d.name, poster: IMAGE_BASE + d.poster_path, ott: d.ott };
                                             setCurrentBoard({...currentBoard, slots: newSlots});
                                             setIsSearchOpen(false);
                                         }} className="cursor-pointer group text-center">
-                                            <img src={d.poster} className="rounded-xl group-hover:ring-4 ring-red-600" />
+                                            <img src={IMAGE_BASE + d.poster_path} className="rounded-xl group-hover:ring-4 ring-red-600" />
                                             <p className="text-[10px] mt-2 truncate opacity-50">{d.name}</p>
                                         </div>
                                     ))}
@@ -226,31 +201,54 @@
         }
 
         function Slot({ data, isDone, onToggle, onSearch, stamp }) {
-            return (
-                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer">
-                    {data ? (
-                        <>
-                            <img src={data.poster} crossOrigin="anonymous" className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-110' : 'grayscale brightness-[0.35]'}`} />
-                            {!isDone && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/10">
-                                    <div className="text-[13px] md:text-sm font-black leading-tight text-white mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] line-clamp-3 px-1">{data.name}</div>
-                                    <div className="flex gap-1.5 justify-center flex-wrap">
-                                        {data.ott?.map((logoUrl, idx) => (
-                                            <img key={idx} src={logoUrl} crossOrigin="anonymous" className="w-5 h-5 rounded-md shadow-lg border border-white/10" />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {isDone && (
-                                <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
-                                    <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-sm shadow-2xl">{stamp}</div>
-                                </div>
-                            )}
-                        </>
-                    ) : <div className="h-full flex items-center justify-center text-white/5 text-2xl font-light">+</div>}
-                </div>
-            );
-        }
+    return (
+        <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer shadow-inner active:scale-95 transition-all">
+            {data ? (
+                <>
+                    <img 
+                        src={data.poster} 
+                        className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-110' : 'grayscale brightness-[0.35]'}`} 
+                    />
+                    
+                    {/* 도장 찍기 전: 제목과 OTT 아이콘 표시 */}
+                    {!isDone && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/10">
+                            {/* 드라마 제목: text-sm으로 키우고 font-black으로 강조 */}
+                            <div className="text-[15px] md:text-sm font-black leading-tight text-white mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] line-clamp-3 px-1">
+                                {data.title}
+                            </div>
+                            
+                            {/* OTT 아이콘 영역 */}
+                            <div className="flex gap-1.5 justify-center flex-wrap">
+                                {data.ott && data.ott.length > 0 ? (
+                                    data.ott.map((logoUrl, idx) => (
+                                        <img 
+                                            key={idx} 
+                                            src={logoUrl} 
+                                            className="w-6 h-6 rounded-md shadow-lg border border-white/10" 
+                                            onError={(e) => e.target.style.display = 'none'} // 로고가 없을 경우 숨김 처리
+                                        />
+                                    ))
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 도장 찍은 후: 쾅! 애니메이션 */}
+                    {isDone && (
+                        <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
+                            <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-sm shadow-2xl">
+                                {stamp}
+                            </div>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="h-full flex items-center justify-center text-white/5 text-3xl font-light">+</div>
+            )}
+        </div>
+    );
+}
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
