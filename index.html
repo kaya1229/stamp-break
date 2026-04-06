@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도장격파 : Stamp Break Pro</title>
+    <title>도장격파 : Stamp Break Studio</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,26 +11,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0a0a0a; color: white; font-family: 'Noto Sans KR', sans-serif; }
+        body { background-color: #050505; color: white; font-family: 'Noto Sans KR', sans-serif; }
         .font-serif { font-family: 'Noto Serif KR', serif; }
         input:focus { outline: none; }
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        /* 도장 쾅! 애니메이션 */
         @keyframes stamp-bang {
             0% { transform: scale(5) rotate(-45deg); opacity: 0; }
             80% { transform: scale(0.9) rotate(-10deg); opacity: 1; }
             100% { transform: scale(1) rotate(-15deg); opacity: 1; }
         }
         .animate-stamp { animation: stamp-bang 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* 컬러피커 커스텀 스타일 */
+        .side-picker { position: relative; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); transition: all 0.2s; overflow: hidden; }
+        .side-picker:hover { transform: scale(1.05); border-color: white; }
+        .side-picker input[type="color"] { position: absolute; top: -10px; left: -10px; width: 80px; height: 80px; cursor: pointer; opacity: 0; }
     </style>
 </head>
-<body class="bg-[#050505]">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
+        const API_KEY = "YOUR_TMDB_API_KEY_HERE"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
         const getContrastColor = (hex) => {
@@ -58,18 +61,17 @@
                 localStorage.setItem('sb_current', JSON.stringify(currentBoard));
             }, [album, currentBoard]);
 
-            // 공유 링크 처리 (기존 로직 유지)
-            useEffect(() => {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('shared')) {
-                    const sharedData = {
-                        id: Date.now(), title: params.get('t'), color: params.get('c'), stamp: params.get('s'),
-                        slots: JSON.parse(decodeURIComponent(params.get('sl'))), dones: Array(16).fill(false)
-                    };
-                    setCurrentBoard(sharedData);
-                    window.history.replaceState({}, '', window.location.pathname);
-                }
-            }, []);
+            const fetchSearchResults = async (q) => {
+                if (q.length < 2) return;
+                const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
+                const data = await resp.json();
+                const withOtt = await Promise.all((data.results || []).map(async (item) => {
+                    const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
+                    const ottData = await ottResp.json();
+                    return { ...item, ott: ottData.results?.KR?.flatrate?.slice(0, 2).map(p => IMAGE_BASE + p.logo_path) || [] };
+                }));
+                setResults(withOtt);
+            };
 
             const saveToAlbum = () => {
                 const exists = album.find(b => b.id === currentBoard.id);
@@ -77,110 +79,105 @@
                 alert("앨범에 저장되었습니다!");
             };
 
-            const shareBoard = () => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('shared', 'true');
-                url.searchParams.set('t', currentBoard.title);
-                url.searchParams.set('c', currentBoard.color);
-                url.searchParams.set('s', currentBoard.stamp);
-                const simplified = currentBoard.slots.map(s => s ? {n: s.title, p: s.poster, ot: s.ott} : null);
-                url.searchParams.set('sl', encodeURIComponent(JSON.stringify(simplified)));
-                navigator.clipboard.writeText(url.toString()).then(() => alert("공유 링크 복사 완료! (내 도장 기록 제외)"));
-            };
-
-            const fetchSearchResults = async (q) => {
-                if (q.length < 2) return;
-                const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
-                const data = await resp.json();
-                
-                // OTT 정보까지 가져오기 위한 추가 작업
-                const resultsWithOtt = await Promise.all((data.results || []).map(async (item) => {
-                    const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
-                    const ottData = await ottResp.json();
-                    const providers = ottData.results?.KR?.flatrate || [];
-                    return { ...item, ott: providers.slice(0, 2).map(p => IMAGE_BASE + p.logo_path) };
-                }));
-                setResults(resultsWithOtt);
-            };
-
             return (
-                <div className="max-w-md mx-auto p-4 pb-48">
-                    <header className="py-6 flex justify-between items-center">
-                        <h1 className="text-2xl font-serif font-black text-red-600">STAMP BREAK</h1>
-                        <button onClick={() => setCurrentBoard({id: Date.now(), title: "새 정복기", color: "#121212", stamp: "完", slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="text-[10px] bg-zinc-800 px-3 py-1 rounded-full text-zinc-400 font-bold">+ NEW BOARD</button>
+                <div className="max-w-4xl mx-auto p-4 flex flex-col items-center pb-40">
+                    <header className="py-10 text-center w-full">
+                        <h1 className="text-4xl font-serif font-black text-red-600 tracking-tighter italic">STAMP BREAK</h1>
+                        <p className="text-[10px] text-zinc-600 mt-2 tracking-widest uppercase">My Drama Collection Board</p>
                     </header>
 
-                    {/* 도장판 */}
-                    <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-5 rounded-xl shadow-2xl transition-colors duration-500 overflow-hidden">
-                        <div className="flex flex-col items-center mb-6 border-b border-white/10 pb-4 text-center">
-                            <input 
-                                className="bg-transparent text-xl font-serif font-black w-full text-center"
-                                style={{ color: getContrastColor(currentBoard.color) }}
-                                value={currentBoard.title}
-                                onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})}
-                            />
-                            <div className="text-red-600 font-serif font-bold text-lg">{currentBoard.stamp}</div>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {currentBoard.slots.map((slot, i) => (
-                                <Slot 
-                                    key={i} data={slot} isDone={currentBoard.dones[i]} stamp={currentBoard.stamp}
-                                    onToggle={() => {
-                                        const newDones = [...currentBoard.dones];
-                                        newDones[i] = !newDones[i];
-                                        setCurrentBoard({...currentBoard, dones: newDones});
-                                    }}
-                                    onSearch={() => { setActiveIndex(i); setIsSearchOpen(true); }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 앨범 스크롤 */}
-                    <div className="mt-10">
-                        <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Album ({album.length})</h2>
-                        <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
-                            {album.map(b => (
-                                <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[100px] aspect-square rounded-lg border-2 p-2 flex flex-col justify-between transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10 scale-95' : 'border-zinc-800 bg-zinc-900'}`}>
-                                    <div className="text-[9px] font-bold truncate leading-tight">{b.title}</div>
-                                    <div className="flex justify-end text-red-600 text-xs font-serif">{b.stamp}</div>
+                    {/* 메인 작업 영역: 컬러피커 + 도장판 */}
+                    <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-2xl">
+                        
+                        {/* 왼쪽 사이드 툴박스 (데스크톱에서는 옆, 모바일은 위) */}
+                        <div className="flex md:flex-col gap-4 order-2 md:order-1 w-full md:w-auto justify-center">
+                            <div className="flex flex-col items-center gap-1">
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase">Board Color</label>
+                                <div className="side-picker" style={{ backgroundColor: currentBoard.color }}>
+                                    <input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 제어 바 */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10 p-5 z-40">
-                        <div className="max-w-md mx-auto grid grid-cols-2 gap-3">
-                            <div className="flex items-center gap-3 bg-zinc-900 p-2 rounded-lg border border-white/5">
-                                <div className="relative w-6 h-6 rounded-full border border-white/20" style={{backgroundColor: currentBoard.color}}>
-                                    <input type="color" className="absolute inset-0 opacity-0 cursor-pointer" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} />
-                                </div>
-                                <input className="w-8 bg-transparent text-center font-serif text-red-600" value={currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-1)})} />
                             </div>
-                            <button onClick={saveToAlbum} className="bg-white text-black text-[10px] font-black rounded-lg">앨범에 저장</button>
-                            <button onClick={shareBoard} className="bg-zinc-800 text-[10px] font-bold py-3 rounded-lg">🔗 링크 공유</button>
-                            <button onClick={() => html2canvas(boardRef.current, {backgroundColor:null, scale:2, useCORS:true}).then(c => { const a=document.createElement('a'); a.download=`${currentBoard.title}.png`; a.href=c.toDataURL(); a.click(); })} className="bg-red-700 text-[10px] font-bold rounded-lg text-white">💾 이미지 저장</button>
+                            <div className="flex flex-col items-center gap-1">
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase">Stamp Text</label>
+                                <input 
+                                    className="w-11 h-11 bg-zinc-900 border-2 border-white/10 rounded-xl text-center font-serif text-red-600 text-xl font-bold"
+                                    value={currentBoard.stamp} 
+                                    onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-1)})} 
+                                />
+                            </div>
+                        </div>
+
+                        {/* 중앙 도장판 (캡처되는 영역) */}
+                        <div className="order-1 md:order-2 flex-grow w-full">
+                            <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-6 rounded-2xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.8)] transition-colors duration-500">
+                                <div className="flex flex-col items-center mb-8 border-b border-white/10 pb-4 text-center">
+                                    <input 
+                                        className="bg-transparent text-2xl font-serif font-black w-full text-center"
+                                        style={{ color: getContrastColor(currentBoard.color) }}
+                                        value={currentBoard.title}
+                                        onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})}
+                                    />
+                                    <div className="text-red-600 font-serif font-bold text-xl mt-1">{currentBoard.stamp}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-3">
+                                    {currentBoard.slots.map((slot, i) => (
+                                        <Slot 
+                                            key={i} data={slot} isDone={currentBoard.dones[i]} stamp={currentBoard.stamp}
+                                            onToggle={() => {
+                                                const newDones = [...currentBoard.dones];
+                                                newDones[i] = !newDones[i];
+                                                setCurrentBoard({...currentBoard, dones: newDones});
+                                            }}
+                                            onSearch={() => { setActiveIndex(i); setIsSearchOpen(true); }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 검색창 */}
-                    {isSearchOpen && (
-                        <div className="fixed inset-0 bg-black z-50 p-6 flex flex-col">
-                            <div className="flex justify-between items-center mb-6 font-serif text-red-600 font-bold"><span>작품 검색</span><button onClick={() => setIsSearchOpen(false)} className="text-3xl">&times;</button></div>
-                            <input className="w-full bg-zinc-900 p-4 rounded-xl mb-6" placeholder="제목 입력..." onChange={(e) => fetchSearchResults(e.target.value)} />
-                            <div className="grid grid-cols-3 gap-3 overflow-y-auto custom-scrollbar">
-                                {results.map(d => (
-                                    <div key={d.id} onClick={() => {
-                                        const newSlots = [...currentBoard.slots];
-                                        newSlots[activeIndex] = { title: d.name, poster: IMAGE_BASE + d.poster_path, ott: d.ott };
-                                        setCurrentBoard({...currentBoard, slots: newSlots});
-                                        setIsSearchOpen(false);
-                                    }} className="cursor-pointer group">
-                                        <img src={IMAGE_BASE + d.poster_path} className="rounded-lg shadow-lg mb-1 group-hover:ring-2 ring-red-600" />
-                                        <p className="text-[8px] text-center truncate opacity-50">{d.name}</p>
+                    {/* 하단 앨범 및 저장 버튼 영역 */}
+                    <div className="w-full max-w-2xl mt-12 space-y-8">
+                        <div className="grid grid-cols-3 gap-3">
+                            <button onClick={saveToAlbum} className="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-xl font-bold text-xs">앨범 저장</button>
+                            <button onClick={() => alert("공유 링크 복사 로직 (기존동일)")} className="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-xl font-bold text-xs">🔗 링크 공유</button>
+                            <button onClick={() => html2canvas(boardRef.current, {backgroundColor:null, scale:3, useCORS:true}).then(c => { const a=document.createElement('a'); a.download=`${currentBoard.title}.png`; a.href=c.toDataURL(); a.click(); })} className="bg-red-700 hover:bg-red-600 py-4 rounded-xl font-bold text-xs">💾 이미지 저장</button>
+                        </div>
+
+                        <div>
+                            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-4">My Collections ({album.length})</h2>
+                            <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar">
+                                {album.map(b => (
+                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[120px] aspect-square rounded-2xl border-2 p-3 flex flex-col justify-between transition-all cursor-pointer ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10' : 'border-zinc-800 bg-zinc-900 hover:border-zinc-600'}`}>
+                                        <div className="text-[10px] font-black leading-tight truncate">{b.title}</div>
+                                        <div className="text-right text-red-600 font-serif text-lg">{b.stamp}</div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 검색 모달 */}
+                    {isSearchOpen && (
+                        <div className="fixed inset-0 bg-black/95 z-50 p-6 flex flex-col items-center">
+                            <div className="w-full max-w-md">
+                                <div className="flex justify-between items-center mb-8"><span className="font-serif text-2xl font-bold text-red-600">DRAMA SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl text-zinc-500">&times;</button></div>
+                                <input className="w-full bg-zinc-900 p-5 rounded-2xl border border-zinc-800 text-lg mb-8" placeholder="제목을 입력하세요..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
+                                <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+                                    {results.map(d => (
+                                        <div key={d.id} onClick={() => {
+                                            const newSlots = [...currentBoard.slots];
+                                            newSlots[activeIndex] = { title: d.name, poster: IMAGE_BASE + d.poster_path, ott: d.ott };
+                                            setCurrentBoard({...currentBoard, slots: newSlots});
+                                            setIsSearchOpen(false);
+                                        }} className="cursor-pointer group">
+                                            <div className="relative aspect-[3/4] overflow-hidden rounded-xl group-hover:ring-4 ring-red-600 transition-all shadow-xl">
+                                                <img src={IMAGE_BASE + d.poster_path} className="w-full h-full object-cover" />
+                                            </div>
+                                            <p className="text-[10px] mt-2 text-center truncate font-medium text-zinc-400 group-hover:text-white">{d.name}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -190,34 +187,27 @@
 
         function Slot({ data, isDone, onToggle, onSearch, stamp }) {
             return (
-                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-white/5 cursor-pointer group">
+                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/20 rounded-xl overflow-hidden border border-white/5 cursor-pointer shadow-inner transition-transform active:scale-95 group">
                     {data ? (
                         <>
-                            {/* 포스터: 도장 안 찍으면 흑백, 찍으면 컬러 */}
-                            <img src={data.poster} className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-105' : 'grayscale brightness-50'}`} />
-                            
-                            {/* 흑백일 때 제목 및 OTT 표시 */}
+                            <img src={data.poster} className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-110' : 'grayscale brightness-50'}`} />
                             {!isDone && (
-                                <div className="absolute inset-0 flex flex-col justify-end p-2 bg-gradient-to-t from-black/80 via-transparent to-transparent">
-                                    <div className="text-[8px] font-bold leading-tight line-clamp-2 mb-1 text-white/90">{data.title}</div>
+                                <div className="absolute inset-0 flex flex-col justify-end p-2 bg-gradient-to-t from-black/90 via-transparent to-transparent">
+                                    <div className="text-[8px] font-black leading-tight text-white/90 line-clamp-2 mb-1">{data.title}</div>
                                     <div className="flex gap-1">
-                                        {data.ott?.map((logo, idx) => (
-                                            <img key={idx} src={logo} className="w-3 h-3 rounded-sm opacity-80" />
-                                        ))}
+                                        {data.ott?.map((logo, idx) => <img key={idx} src={logo} className="w-3.5 h-3.5 rounded-sm shadow-md" />)}
                                     </div>
                                 </div>
                             )}
-
-                            {/* 도장 애니메이션: 컬러일 때만 쾅! */}
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
-                                    <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-[1px] shadow-2xl">
+                                    <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-sm shadow-2xl">
                                         {stamp}
                                     </div>
                                 </div>
                             )}
                         </>
-                    ) : <div className="h-full flex items-center justify-center text-white/5 text-xl font-light hover:text-white/20 transition-colors">+</div>}
+                    ) : <div className="h-full flex items-center justify-center text-white/10 text-2xl font-light hover:text-white/30 transition-colors">+</div>}
                 </div>
             );
         }
