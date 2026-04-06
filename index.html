@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도장깨기</title>
+    <title>도장 깨기</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -53,7 +53,7 @@
             const [manualData, setManualData] = useState({ title: '', poster: '' });
 
             const [currentBoard, setCurrentBoard] = useState({
-                id: Date.now(), title: "나의 정복 리스트", author: "USER", color: "#fefefe", 
+                id: Date.now(), title: "나의 리스트", author: "USER", color: "#fefefe", 
                 stamp: "完", stampColor: "#e11d48", isIconMode: false, useStampBorder: true,
                 slots: Array(16).fill(null), dones: Array(16).fill(false)
             });
@@ -129,7 +129,7 @@
 
                         <div style={{ backgroundColor: currentBoard.color }} className="p-6 md:p-12 doodle-border border-[3px] border-black shadow-[12px_12px_0px_#000] relative">
                             <div className="mb-14 flex flex-col items-center">
-                                <input className="bg-transparent text-5xl md:text-7xl font-bold w-full text-center outline-none font-gaegu pb-6 mb-2" style={{ color: textColor, borderBottom: `4px dashed ${textColor}44` }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                <input className="bg-transparent text-3xl md:text-5xl font-bold w-full text-center outline-none font-gaegu pb-6 mb-2" style={{ color: textColor, borderBottom: `4px dashed ${textColor}44` }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 <div className="flex items-center text-xl md:text-2xl font-bold opacity-80 mt-2 font-gaegu" style={{ color: textColor }}>
                                     <span className="mr-2 italic opacity-60 text-sm md:text-base">만든 이 | </span>
                                     <input className="bg-transparent border-b border-dashed border-current w-32 text-center" value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value})} />
