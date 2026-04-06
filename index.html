@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도장격파 : Stamp Break Pro Max</title>
+    <title>도장격파 : Stamp Break Ultimate</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,6 +22,8 @@
         .animate-stamp { animation: stamp-bang 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .side-picker { position: relative; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); transition: all 0.2s; overflow: hidden; }
         .side-picker input[type="color"] { position: absolute; top: -10px; left: -10px; width: 80px; height: 80px; cursor: pointer; opacity: 0; }
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -70,14 +72,26 @@
                 setResults(withOtt);
             };
 
+            // 새 도장판 만들기 기능
+            const createNewBoard = () => {
+                const newBoard = {
+                    id: Date.now(),
+                    title: "새로운 정복기",
+                    color: "#121212",
+                    stamp: "完",
+                    slots: Array(16).fill(null),
+                    dones: Array(16).fill(false)
+                };
+                setCurrentBoard(newBoard);
+            };
+
             const downloadImage = async () => {
                 if(!boardRef.current) return;
                 const canvas = await html2canvas(boardRef.current, {
                     backgroundColor: currentBoard.color,
                     scale: 3,
                     useCORS: true,
-                    allowTaint: false,
-                    logging: false
+                    allowTaint: false
                 });
                 const link = document.createElement('a');
                 link.download = `${currentBoard.title}.png`;
@@ -93,8 +107,15 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-4 flex flex-col items-center pb-40">
-                    <header className="py-10 text-center w-full">
-                        <h1 className="text-4xl font-serif font-black text-red-600 tracking-tighter italic">STAMP BREAK</h1>
+                    <header className="py-8 flex justify-between items-center w-full max-w-2xl">
+                        <h1 className="text-3xl font-serif font-black text-red-600 tracking-tighter italic">STAMP BREAK</h1>
+                        {/* 다시 추가된 새 도장판 버튼 */}
+                        <button 
+                            onClick={createNewBoard}
+                            className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-full text-[10px] font-bold text-zinc-300 transition-all border border-white/5"
+                        >
+                            + NEW BOARD
+                        </button>
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-2xl">
@@ -157,11 +178,12 @@
                             <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Album ({album.length})</h2>
                             <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                                 {album.map(b => (
-                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[120px] aspect-square rounded-2xl border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10 scale-95' : 'border-zinc-800 bg-zinc-900'}`}>
+                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[120px] aspect-square rounded-2xl border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10 scale-95' : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'}`}>
                                         <div className="text-[10px] font-black leading-tight truncate">{b.title}</div>
                                         <div className="text-right text-red-600 font-serif text-lg">{b.stamp}</div>
                                     </div>
                                 ))}
+                                {album.length === 0 && <p className="text-[10px] text-zinc-700 italic">저장된 컬렉션이 없습니다.</p>}
                             </div>
                         </div>
                     </div>
@@ -172,7 +194,7 @@
                             <div className="w-full max-w-md">
                                 <div className="flex justify-between items-center mb-8 font-serif text-2xl font-bold text-red-600"><span>DRAMA SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl text-zinc-500">&times;</button></div>
                                 <input className="w-full bg-zinc-900 p-5 rounded-2xl border border-zinc-800 text-lg mb-8" placeholder="드라마 제목 입력..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
-                                <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh]">
+                                <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
                                     {results.map(d => (
                                         <div key={d.id} onClick={() => {
                                             const newSlots = [...currentBoard.slots];
@@ -180,7 +202,7 @@
                                             setCurrentBoard({...currentBoard, slots: newSlots});
                                             setIsSearchOpen(false);
                                         }} className="cursor-pointer group text-center">
-                                            <img src={IMAGE_BASE + d.poster_path} className="rounded-xl group-hover:ring-4 ring-red-600 transition-all" />
+                                            <img src={IMAGE_BASE + d.poster_path} className="rounded-xl group-hover:ring-4 ring-red-600 transition-all" crossOrigin="anonymous" />
                                             <p className="text-[10px] mt-2 truncate opacity-50">{d.name}</p>
                                         </div>
                                     ))}
@@ -194,10 +216,9 @@
 
         function Slot({ data, isDone, onToggle, onSearch, stamp }) {
             return (
-                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer">
+                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer shadow-inner active:scale-95 transition-all">
                     {data ? (
                         <>
-                            {/* 핵심: crossOrigin="anonymous" 추가하여 이미지 저장 문제 해결 */}
                             <img 
                                 src={data.poster} 
                                 crossOrigin="anonymous"
@@ -221,7 +242,7 @@
                                 </div>
                             )}
                         </>
-                    ) : <div className="h-full flex items-center justify-center text-white/5 text-2xl">+</div>}
+                    ) : <div className="h-full flex items-center justify-center text-white/5 text-2xl font-light">+</div>}
                 </div>
             );
         }
