@@ -47,7 +47,6 @@
 
         const API_KEY = "291299eef434b2f459b25d72c4c667a1"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-        // CORS 우회를 위해 타임스탬프를 쿼리 파라미터로 추가
         const getCORSImageUrl = (url) => url ? `${url}?t=${new Date().getTime()}` : null;
 
         const ICON_SUGGESTIONS = [
@@ -98,69 +97,66 @@
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, results, isSearchOpen, album]);
             useEffect(() => { localStorage.setItem('sb_album', JSON.stringify(album)); }, [album]);
 
-            // --- 수정된 이미지 다운로드 함수 ---
+            // --- 물리적 여백을 강제 확보한 이미지 다운로드 함수 ---
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
 
                 try {
-                    // 1. 폰트 로드 완료 보장
                     await document.fonts.ready;
-
                     const element = boardRef.current;
                     
                     const options = {
-                        useCORS: true,         // 외부 포스터 이미지 허용
-                        allowTaint: false,      // 보안 정책상 false 권장
-                        scale: 2,               // 고화질 (간격 좁아짐 방지)
+                        useCORS: true,
+                        allowTaint: false,
+                        scale: 2,
                         backgroundColor: "#ffffff",
                         logging: false,
-                        // 2. 캡처 영역 여백 확보 (잘림 방지)
-                        width: element.offsetWidth + 60,
-                        height: element.offsetHeight + 60,
-                        x: -30,
-                        y: -30,
-                        // 3. 기준 해상도 고정
-                        windowWidth: 1200,
-                        windowHeight: 1200,
+                        // 캡처 윈도우 크기를 넉넉하게 고정
+                        windowWidth: element.scrollWidth + 200,
+                        windowHeight: element.scrollHeight + 200,
                         onclone: (clonedDoc) => {
-                            // UI 정리 (삭제 버튼 숨기기)
+                            // 1. 클론 문서 내에서 타겟 보드 찾기
+                            const clonedBoard = clonedDoc.querySelector('.board-to-export');
+                            if (!clonedBoard) return;
+
+                            // 2. 삭제 버튼 제거
                             const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
                             deleteBtns.forEach(btn => btn.style.display = 'none');
 
-                            const board = clonedDoc.querySelector('.board-to-export');
-                            if (board) {
-                                // 4. 캡처 시에만 회전을 풀어 정렬 정확도 확보
-                                board.style.transform = "none";
-                                board.style.margin = "30px";
-                                board.style.boxShadow = "8px 8px 0px #000";
-                            }
+                            // 3. 잘림 방지 핵심: 부모 요소에 거대한 여백과 배경색 입히기
+                            const parent = clonedBoard.parentElement;
+                            parent.style.padding = "60px";
+                            parent.style.display = "inline-block";
+                            parent.style.backgroundColor = "#ffffff";
+                            
+                            // 4. 회전 및 위치 보정
+                            clonedBoard.style.transform = "none"; 
+                            clonedBoard.style.margin = "0 auto";
+                            clonedBoard.style.boxShadow = "8px 8px 0px #000";
 
-                            // 5. 텍스트/아이콘 정렬 안정화
-                            const allElements = clonedDoc.querySelectorAll('input, div, p, span, i');
-                            allElements.forEach(el => {
+                            // 5. 텍스트 뭉개짐 방지 (Gaegu 폰트 명시)
+                            const textElements = clonedDoc.querySelectorAll('input, div, p, span');
+                            textElements.forEach(el => {
+                                el.style.fontFamily = "'Gaegu', cursive";
                                 el.style.letterSpacing = "0px";
-                                if (el.tagName === 'I') {
-                                    el.style.display = 'inline-flex';
-                                    el.style.alignItems = 'center';
-                                    el.style.justifyContent = 'center';
-                                }
                             });
                         }
                     };
 
+                    // 부모 요소를 캡처 대상으로 삼아 여백을 포함시킴
                     const canvas = await html2canvas(element, options);
                     const image = canvas.toDataURL("image/png", 1.0);
+                    
                     const link = document.createElement("a");
                     link.href = image;
                     link.download = `${currentBoard.title || 'stamp-board'}.png`;
-                    
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                     
                 } catch (err) {
-                    console.error("이미지 생성 오류:", err);
-                    alert("이미지 저장에 실패했습니다. 다시 시도해 주세요.");
+                    console.error("Export Error:", err);
+                    alert("이미지 저장 중 문제가 발생했습니다.");
                 }
             };
 
@@ -235,7 +231,8 @@
                             </div>
                         </div>
 
-                        <div className="order-1 md:order-2 flex-grow w-full max-w-3xl" ref={boardRef}>
+                        {/* boardRef를 감싸는 부모 div가 캡처 시 여백의 바탕이 됨 */}
+                        <div className="order-1 md:order-2 flex-grow w-full max-w-3xl overflow-visible" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
                                 <div className="py-4 mb-2">
                                     <input className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
@@ -273,23 +270,6 @@
                                     .then(() => alert("공유 링크 복사 완료!"));
                             }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
-
-                        {album.length > 0 && (
-                            <div className="bg-gray-100 p-6 doodle-border border-2 border-black">
-                                <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-left">My Collections ({album.length})</h2>
-                                <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                                    {album.map(b => (
-                                        <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-50 hover:opacity-100'}`}>
-                                            <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(item => item.id !== b.id)); }} className="absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">×</button>
-                                            <div className="flex-grow flex items-center justify-center">
-                                                <div className="font-gaegu text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}</div>
-                                            </div>
-                                            <div className="text-[14px] font-bold truncate font-gaegu text-center border-t border-black/5 pt-1">{b.title}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {isSearchOpen && (
