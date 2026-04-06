@@ -12,11 +12,27 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 전역 폰트 강제 적용 */
+        /* 폰트 로드 보장 및 전역 적용 */
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+        
         * { font-family: 'Gaegu', cursive !important; }
         body { background-color: #ffffff; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
         input:focus { outline: none; }
         
+        /* 슬롯 내 텍스트/아이콘 비율 고정 */
+        .slot-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; padding: 0.5rem; }
+        .slot-title { font-size: clamp(0.8rem, 2vw, 1.1rem); line-height: 1.2; margin-bottom: 0.4rem; text-align: center; word-break: keep-all; }
+        .ott-container { display: flex; gap: 0.3rem; justify-content: center; align-items: center; }
+        .ott-icon { width: 1.2rem; height: 1.2rem; border-radius: 0.2rem; }
+
+        /* 도장 정렬 보정 */
+        .stamp-box { 
+            display: flex !important; align-items: center !important; justify-content: center !important; 
+            width: 55px; height: 55px; border-width: 3px; border-style: solid; background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); transform: rotate(-12deg);
+        }
+        .stamp-inner { display: flex !important; align-items: center !important; justify-content: center !important; width: 100%; height: 100%; line-height: 1; }
+
         input[type=range] { -webkit-appearance: none; background: #e5e7eb; border-radius: 10px; height: 6px; border: 1px solid #1a1a1a; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #1a1a1a; border-radius: 50%; cursor: pointer; border: 1px solid #000; }
 
@@ -34,9 +50,6 @@
         
         .palette-box { border: 2px solid #1a1a1a; border-radius: 4px; overflow: hidden; position: relative; width: 100%; height: 40px; cursor: pointer; }
         .palette-box input[type="color"] { position: absolute; top: -10px; left: -10px; width: 200%; height: 200%; cursor: pointer; opacity: 0; }
-
-        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -84,8 +97,7 @@
             const [activeIndex, setActiveIndex] = useState(null);
             const [results, setResults] = useState([]);
 
-            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, results, isSearchOpen, album]);
-            useEffect(() => { localStorage.setItem('sb_album', JSON.stringify(album)); }, [album]);
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, results, isSearchOpen]);
 
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
@@ -94,39 +106,41 @@
                     const element = boardRef.current;
                     const options = {
                         useCORS: true,
-                        scale: 2,
+                        scale: 3, // 고해상도 3배율
                         backgroundColor: "#ffffff",
                         onclone: (clonedDoc) => {
                             const clonedBoard = clonedDoc.querySelector('.board-to-export');
                             if (!clonedBoard) return;
                             
-                            // 1. 입력창 변환 및 폰트/정렬 강제 주입
-                            const inputs = clonedBoard.querySelectorAll('input[type="text"]');
-                            inputs.forEach(input => {
-                                const replacement = clonedDoc.createElement('div');
-                                replacement.innerText = input.value;
-                                // 기존 스타일 복사 및 중요 스타일 강제 덮어쓰기
-                                replacement.style.cssText = window.getComputedStyle(input).cssText;
-                                replacement.style.fontFamily = "'Gaegu', cursive";
-                                replacement.style.display = "flex";
-                                replacement.style.alignItems = "center";
-                                replacement.style.justifyContent = "center";
-                                replacement.style.textAlign = "center";
-                                replacement.style.border = "none";
-                                replacement.style.background = "transparent";
-                                replacement.style.paddingTop = input.classList.contains('title-main') ? "20px" : "8px"; 
-                                input.parentNode.replaceChild(replacement, input);
+                            // 모든 텍스트 요소에 폰트와 정렬 강제 적용
+                            clonedBoard.querySelectorAll('*').forEach(el => {
+                                el.style.fontFamily = "'Gaegu', cursive";
+                                if (el.tagName === 'INPUT') {
+                                    const div = clonedDoc.createElement('div');
+                                    div.innerText = el.value;
+                                    div.style.cssText = window.getComputedStyle(el).cssText;
+                                    div.style.display = "flex";
+                                    div.style.alignItems = "center";
+                                    div.style.justifyContent = "center";
+                                    div.style.border = "none";
+                                    div.style.background = "transparent";
+                                    div.style.paddingTop = "10px"; // 수직 중앙 보정
+                                    el.parentNode.replaceChild(div, el);
+                                }
                             });
 
-                            // 2. 모든 텍스트 엘리먼트에 Gaegu 폰트 일괄 재선언
-                            clonedDoc.querySelectorAll('div, span, p').forEach(el => {
-                                el.style.setProperty('font-family', "'Gaegu', cursive", 'important');
+                            // 도장 내부 아이콘/텍스트 정렬 강제 보정
+                            clonedBoard.querySelectorAll('.stamp-inner').forEach(inner => {
+                                inner.style.display = "flex";
+                                inner.style.alignItems = "center";
+                                inner.style.justifyContent = "center";
+                                inner.style.width = "100%";
+                                inner.style.height = "100%";
                             });
 
                             clonedDoc.querySelectorAll('.delete-btn').forEach(btn => btn.style.display = 'none');
                             const parent = clonedBoard.parentElement;
-                            parent.style.padding = "80px";
-                            parent.style.backgroundColor = "#ffffff";
+                            parent.style.padding = "60px";
                             clonedBoard.style.transform = "none"; 
                             clonedBoard.style.margin = "0 auto";
                         }
@@ -153,12 +167,6 @@
                 } catch (e) { console.error(e); }
             };
 
-            const saveToAlbum = () => {
-                const newAlbum = [...album.filter(b => b.id !== currentBoard.id), { ...currentBoard, id: Date.now() }];
-                setAlbum(newAlbum);
-                alert("앨범에 저장되었습니다!");
-            };
-
             return (
                 <div className="max-w-5xl mx-auto p-6 flex flex-col items-center pb-40">
                     <header className="py-8 flex justify-between items-end w-full max-w-2xl mb-12">
@@ -169,7 +177,7 @@
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-10 items-start justify-center w-full">
-                        {/* 컨트롤 패널 */}
+                        {/* 설정 패널 */}
                         <div className="flex flex-col gap-6 order-2 md:order-1 w-full md:w-64 p-6 bg-gray-50 rounded-xl border-2 border-black/5">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-gray-400 flex justify-between uppercase"><span>Slot Count</span><span className="text-black">{currentBoard.slots.length}</span></label>
@@ -211,11 +219,11 @@
                             </div>
                         </div>
 
-                        {/* 도장판 보드 */}
+                        {/* 도장판 본체 */}
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl overflow-visible" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
                                 <div className="py-4 mb-2 flex justify-center">
-                                    <input type="text" className="title-main bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                    <input type="text" className="bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 </div>
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-8">
                                     <span style={{ color: getContrastColor(currentBoard.color) }}>Created by</span>
@@ -230,40 +238,25 @@
                         </div>
                     </div>
 
+                    {/* 하단 버튼 및 앨범 */}
                     <div className="w-full max-w-2xl mt-16 flex flex-col gap-10">
                         <div className="grid grid-cols-3 gap-4">
-                            <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
+                            <button onClick={() => { setAlbum([...album.filter(b => b.id !== currentBoard.id), { ...currentBoard, id: Date.now() }]); alert("앨범 저장!"); }} className="doodle-button bg-white py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
                             <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
                                 const dataToShare = { title: currentBoard.title, author: currentBoard.author, color: currentBoard.color, stamp: currentBoard.stamp, stampColor: currentBoard.stampColor, isIconMode: currentBoard.isIconMode, slots: currentBoard.slots };
                                 navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${btoa(encodeURIComponent(JSON.stringify(dataToShare)))}`).then(() => alert("링크 복사 완료!"));
                             }} className="doodle-button bg-black text-white py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
-
-                        {album.length > 0 && (
-                            <div className="bg-gray-100 p-6 doodle-border border-2 border-black">
-                                <h2 className="text-xs font-bold uppercase tracking-widest mb-4 text-left">My Collections ({album.length})</h2>
-                                <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                                    {album.map(b => (
-                                        <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-50 hover:opacity-100'}`}>
-                                            <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(item => item.id !== b.id)); }} className="absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">×</button>
-                                            <div className="flex-grow flex items-center justify-center">
-                                                <div className="text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}</div>
-                                            </div>
-                                            <div className="text-[14px] font-bold truncate text-center border-t border-black/5 pt-1">{b.title}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
 
+                    {/* 검색창 모달 */}
                     {isSearchOpen && (
                         <div className="fixed inset-0 bg-white/95 z-50 p-6 flex flex-col items-center backdrop-blur-sm">
                             <div className="w-full max-w-md">
                                 <div className="flex justify-between items-center mb-8 text-4xl font-black"><span>SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl">&times;</button></div>
                                 <input className="w-full bg-white p-4 border-4 border-black text-xl mb-8 font-bold doodle-border" placeholder="드라마 제목 입력..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
-                                <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+                                <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2">
                                     {results.map(d => (
                                         <div key={d.id} onClick={() => { const newSlots = [...currentBoard.slots]; newSlots[activeIndex] = { title: d.name, poster: IMAGE_BASE + d.poster_path, ott: d.ott }; setCurrentBoard({...currentBoard, slots: newSlots}); setIsSearchOpen(false); }} className="cursor-pointer text-center bg-white p-1 border-2 border-black doodle-border hover:shadow-[3px_3px_0px_#000] transition-all">
                                             <img src={getCORSImageUrl(IMAGE_BASE + d.poster_path)} crossOrigin="anonymous" className="w-full aspect-[2/3] object-cover mb-1" />
@@ -284,29 +277,29 @@
                 <div onClick={() => data ? onToggle() : onSearch()} style={{ transform: `rotate(${randomRotate}deg)` }} className="relative aspect-[3/4] bg-white border-2 border-black overflow-hidden cursor-pointer shadow-[2px_2px_0px_#000]">
                     {data ? (
                         <>
-                            <button onClick={onClear} className="delete-btn absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] z-20 hover:bg-red-500">×</button>
-                            <img src={getCORSImageUrl(data.poster)} crossOrigin="anonymous" className={`w-full h-full object-cover transition-all ${isDone ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`} />
+                            <button onClick={onClear} className="delete-btn absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] z-20">×</button>
+                            <img src={getCORSImageUrl(data.poster)} crossOrigin="anonymous" className={`w-full h-full object-cover transition-all ${isDone ? 'opacity-100' : 'opacity-20 grayscale'}`} />
                             {!isDone && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-white/30 backdrop-blur-[1px]">
-                                    <div className="text-[17px] font-bold text-black leading-tight mb-2 px-1 break-keep" style={{fontFamily: "'Gaegu', cursive"}}>{data.title}</div>
-                                    <div className="flex gap-1.5 justify-center">
+                                <div className="slot-content absolute inset-0 bg-white/40 backdrop-blur-[1px]">
+                                    <div className="slot-title font-bold text-black">{data.title}</div>
+                                    <div className="ott-container">
                                         {data.ott?.map((logo, i) => (
-                                            <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="w-4.5 h-4.5 rounded-sm shadow-sm" />
+                                            <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="ott-icon shadow-sm" />
                                         ))}
                                     </div>
                                 </div>
                             )}
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
-                                    <div className="border-[3px] bg-white shadow-md flex items-center justify-center min-w-[50px] min-h-[50px] rotate-[-10deg] p-1" style={{ borderColor: stampColor }}>
-                                        <div className="flex items-center justify-center w-full h-full font-black text-3xl" style={{ color: stampColor }}>
-                                            {isIconMode ? <i data-lucide={stamp} className="w-8 h-8 stroke-[3.5px]"></i> : <span>{stamp}</span>}
+                                    <div className="stamp-box" style={{ borderColor: stampColor }}>
+                                        <div className="stamp-inner" style={{ color: stampColor }}>
+                                            {isIconMode ? <i data-lucide={stamp} className="w-8 h-8 stroke-[3.5px]"></i> : <span className="text-3xl font-black">{stamp}</span>}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </>
-                    ) : <div className="h-full flex items-center justify-center text-gray-200 text-3xl">+</div>}
+                    ) : <div className="h-full flex items-center justify-center text-gray-200 text-4xl">+</div>}
                 </div>
             );
         }
