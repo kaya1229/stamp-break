@@ -40,7 +40,6 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
-        const TMDB_KEY = "TMDB_API_KEY"; 
         const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
         const STAMP_SOUND = new Audio("https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3");
 
@@ -101,23 +100,34 @@
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, viewerMode, album, isSearchOpen, manualAdd]);
 
             const fetchSearchResults = async (q) => {
-                if (q.length < 2) return;
-                try {
-                    const resp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&language=ko-KR`);
-                    const data = await resp.json();
-                    setResults(data.results || []);
-                } catch (e) { console.error(e); }
-            };
+    if (q.length < 2) return;
+    try {
+        // 직접 TMDB로 가지 않고, 내 Vercel API(/api/search)로 요청합니다.
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
+        
+        // 검색 결과 중 영화와 TV 프로그램만 필터링
+        const filtered = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+        setResults(filtered);
+    } catch (e) { 
+        console.error("검색 에러:", e); 
+    }
+};
 
             const getOTTProviders = async (id, type) => {
-                if(!TMDB_KEY || TMDB_KEY === "YOUR_TMDB_API_KEY") return [];
-                try {
-                    const resp = await fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${TMDB_KEY}`);
-                    const data = await resp.json();
-                    const providers = data.results?.KR?.flatrate || [];
-                    return providers.map(p => `https://image.tmdb.org/t/p/original${p.logo_path}`);
-                } catch (e) { return []; }
-            };
+    if (!id || !type) return [];
+    try {
+        // 마찬가지로 내 API에 id와 type을 전달합니다.
+        const resp = await fetch(`/api/search?id=${id}&type=${type}`);
+        const data = await resp.json();
+        
+        const providers = data.results?.KR?.flatrate || [];
+        return providers.map(p => `https://image.tmdb.org/t/p/original${p.logo_path}`);
+    } catch (e) { 
+        console.error("OTT 로고 에러:", e);
+        return []; 
+    }
+};
 
             return (
                 <div className="max-w-4xl mx-auto p-6 flex flex-col items-center pb-24 relative">
