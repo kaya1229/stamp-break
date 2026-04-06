@@ -12,8 +12,9 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #ffffff; color: #1a1a1a; font-family: 'Gaegu', cursive; -webkit-font-smoothing: antialiased; }
-        .font-gaegu { font-family: 'Gaegu', cursive !important; }
+        /* 전역 폰트 강제 적용 */
+        * { font-family: 'Gaegu', cursive !important; }
+        body { background-color: #ffffff; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
         input:focus { outline: none; }
         
         input[type=range] { -webkit-appearance: none; background: #e5e7eb; border-radius: 10px; height: 6px; border: 1px solid #1a1a1a; }
@@ -36,9 +37,6 @@
 
         .custom-scrollbar::-webkit-scrollbar { height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
-
-        /* 캡처 시 폰트 적용을 명확히 하기 위한 클래스 */
-        .export-text { font-family: 'Gaegu', cursive !important; }
     </style>
 </head>
 <body>
@@ -96,20 +94,18 @@
                     const element = boardRef.current;
                     const options = {
                         useCORS: true,
-                        allowTaint: false,
                         scale: 2,
                         backgroundColor: "#ffffff",
                         onclone: (clonedDoc) => {
                             const clonedBoard = clonedDoc.querySelector('.board-to-export');
                             if (!clonedBoard) return;
                             
-                            // 1. 입력창(Input)을 Div로 변환 및 폰트 강제 적용
+                            // 1. 입력창 변환 및 폰트/정렬 강제 주입
                             const inputs = clonedBoard.querySelectorAll('input[type="text"]');
                             inputs.forEach(input => {
                                 const replacement = clonedDoc.createElement('div');
                                 replacement.innerText = input.value;
-                                replacement.className = "export-text";
-                                // 스타일 복제 및 정렬 강제 주입
+                                // 기존 스타일 복사 및 중요 스타일 강제 덮어쓰기
                                 replacement.style.cssText = window.getComputedStyle(input).cssText;
                                 replacement.style.fontFamily = "'Gaegu', cursive";
                                 replacement.style.display = "flex";
@@ -118,17 +114,16 @@
                                 replacement.style.textAlign = "center";
                                 replacement.style.border = "none";
                                 replacement.style.background = "transparent";
-                                replacement.style.paddingTop = input.classList.contains('title-main') ? "15px" : "4px";
+                                replacement.style.paddingTop = input.classList.contains('title-main') ? "20px" : "8px"; 
                                 input.parentNode.replaceChild(replacement, input);
                             });
 
-                            // 2. 모든 텍스트 엘리먼트에 폰트 강제 주입
+                            // 2. 모든 텍스트 엘리먼트에 Gaegu 폰트 일괄 재선언
                             clonedDoc.querySelectorAll('div, span, p').forEach(el => {
-                                el.style.fontFamily = "'Gaegu', cursive";
+                                el.style.setProperty('font-family', "'Gaegu', cursive", 'important');
                             });
 
                             clonedDoc.querySelectorAll('.delete-btn').forEach(btn => btn.style.display = 'none');
-                            
                             const parent = clonedBoard.parentElement;
                             parent.style.padding = "80px";
                             parent.style.backgroundColor = "#ffffff";
@@ -167,13 +162,14 @@
             return (
                 <div className="max-w-5xl mx-auto p-6 flex flex-col items-center pb-40">
                     <header className="py-8 flex justify-between items-end w-full max-w-2xl mb-12">
-                        <h1 className="text-6xl font-black italic rotate-[-2deg] font-gaegu leading-none">
+                        <h1 className="text-6xl font-black italic rotate-[-2deg] leading-none">
                             <span className="hand-underline">STAMP BREAK</span>
                         </h1>
-                        <button onClick={() => setCurrentBoard({...currentBoard, id: Date.now(), title: "나의 정복 리스트", author: "YOUR NAME", slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="doodle-button bg-gray-100 px-4 py-2 font-bold font-gaegu">+ NEW</button>
+                        <button onClick={() => setCurrentBoard({...currentBoard, id: Date.now(), title: "나의 정복 리스트", author: "YOUR NAME", slots: Array(16).fill(null), dones: Array(16).fill(false)})} className="doodle-button bg-gray-100 px-4 py-2 font-bold">+ NEW</button>
                     </header>
 
                     <div className="flex flex-col md:flex-row gap-10 items-start justify-center w-full">
+                        {/* 컨트롤 패널 */}
                         <div className="flex flex-col gap-6 order-2 md:order-1 w-full md:w-64 p-6 bg-gray-50 rounded-xl border-2 border-black/5">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-gray-400 flex justify-between uppercase"><span>Slot Count</span><span className="text-black">{currentBoard.slots.length}</span></label>
@@ -205,7 +201,7 @@
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase">Stamp Style</label>
                                 <div className="flex gap-2">
-                                    <input className="w-12 h-10 bg-white border-2 border-black rounded-lg text-center font-bold text-xl font-gaegu" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
+                                    <input className="w-12 h-10 bg-white border-2 border-black rounded-lg text-center font-bold text-xl" value={currentBoard.isIconMode ? "" : currentBoard.stamp} onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-2), isIconMode: false})} />
                                     <div className="grid grid-cols-4 gap-0.5 bg-white p-1 rounded-md border border-black/10 flex-grow">
                                         {ICON_SUGGESTIONS.map(item => (
                                             <button key={item.id} onClick={() => setCurrentBoard({...currentBoard, stamp: item.icon, isIconMode: true})} className={`w-7 h-7 flex items-center justify-center rounded ${currentBoard.isIconMode && currentBoard.stamp === item.icon ? 'bg-black text-white' : 'text-gray-300'}`}><i data-lucide={item.icon} className="w-3.5 h-3.5"></i></button>
@@ -215,14 +211,15 @@
                             </div>
                         </div>
 
+                        {/* 도장판 보드 */}
                         <div className="order-1 md:order-2 flex-grow w-full max-w-3xl overflow-visible" ref={boardRef}>
                             <div style={{ backgroundColor: currentBoard.color }} className="board-to-export p-8 md:p-12 doodle-border border-[3px] border-black shadow-[8px_8px_0px_#000] rotate-[0.5deg] overflow-visible">
                                 <div className="py-4 mb-2 flex justify-center">
-                                    <input type="text" className="title-main bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30 font-gaegu" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
+                                    <input type="text" className="title-main bg-transparent text-5xl font-bold w-full text-center outline-none border-b-2 border-black/10 focus:border-black/30" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.title} onChange={(e) => setCurrentBoard({...currentBoard, title: e.target.value})} />
                                 </div>
                                 <div className="flex items-center justify-center gap-2 text-sm font-bold opacity-60 mb-8">
                                     <span style={{ color: getContrastColor(currentBoard.color) }}>Created by</span>
-                                    <input type="text" className="bg-transparent border-b border-dashed border-black/30 w-32 text-center font-gaegu text-xl" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
+                                    <input type="text" className="bg-transparent border-b border-dashed border-black/30 w-32 text-center text-xl" style={{ color: getContrastColor(currentBoard.color) }} value={currentBoard.author} onChange={(e) => setCurrentBoard({...currentBoard, author: e.target.value.toUpperCase()})} />
                                 </div>
                                 <div className={`grid gap-4 ${currentBoard.slots.length <= 11 ? 'grid-cols-3' : currentBoard.slots.length <= 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                                     {currentBoard.slots.map((slot, i) => (
@@ -235,12 +232,12 @@
 
                     <div className="w-full max-w-2xl mt-16 flex flex-col gap-10">
                         <div className="grid grid-cols-3 gap-4">
-                            <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
-                            <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
+                            <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
+                            <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
                                 const dataToShare = { title: currentBoard.title, author: currentBoard.author, color: currentBoard.color, stamp: currentBoard.stamp, stampColor: currentBoard.stampColor, isIconMode: currentBoard.isIconMode, slots: currentBoard.slots };
                                 navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${btoa(encodeURIComponent(JSON.stringify(dataToShare)))}`).then(() => alert("링크 복사 완료!"));
-                            }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
+                            }} className="doodle-button bg-black text-white py-4 font-bold text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
 
                         {album.length > 0 && (
@@ -251,9 +248,9 @@
                                         <div key={b.id} onClick={() => setCurrentBoard(b)} className={`relative min-w-[120px] aspect-square bg-white border-2 border-black p-3 flex flex-col cursor-pointer transition-all ${currentBoard.id === b.id ? 'scale-105 shadow-[4px_4px_0px_#000]' : 'opacity-50 hover:opacity-100'}`}>
                                             <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(item => item.id !== b.id)); }} className="absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px]">×</button>
                                             <div className="flex-grow flex items-center justify-center">
-                                                <div className="font-gaegu text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}</div>
+                                                <div className="text-2xl" style={{ color: b.stampColor }}>{b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8"></i> : b.stamp}</div>
                                             </div>
-                                            <div className="text-[14px] font-bold truncate font-gaegu text-center border-t border-black/5 pt-1">{b.title}</div>
+                                            <div className="text-[14px] font-bold truncate text-center border-t border-black/5 pt-1">{b.title}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -264,13 +261,13 @@
                     {isSearchOpen && (
                         <div className="fixed inset-0 bg-white/95 z-50 p-6 flex flex-col items-center backdrop-blur-sm">
                             <div className="w-full max-w-md">
-                                <div className="flex justify-between items-center mb-8 font-gaegu text-4xl font-black"><span>SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl">&times;</button></div>
-                                <input className="w-full bg-white p-4 border-4 border-black text-xl mb-8 font-bold doodle-border font-gaegu" placeholder="드라마 제목 입력..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
+                                <div className="flex justify-between items-center mb-8 text-4xl font-black"><span>SEARCH</span><button onClick={() => setIsSearchOpen(false)} className="text-4xl">&times;</button></div>
+                                <input className="w-full bg-white p-4 border-4 border-black text-xl mb-8 font-bold doodle-border" placeholder="드라마 제목 입력..." onChange={(e) => fetchSearchResults(e.target.value)} autoFocus />
                                 <div className="grid grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
                                     {results.map(d => (
                                         <div key={d.id} onClick={() => { const newSlots = [...currentBoard.slots]; newSlots[activeIndex] = { title: d.name, poster: IMAGE_BASE + d.poster_path, ott: d.ott }; setCurrentBoard({...currentBoard, slots: newSlots}); setIsSearchOpen(false); }} className="cursor-pointer text-center bg-white p-1 border-2 border-black doodle-border hover:shadow-[3px_3px_0px_#000] transition-all">
                                             <img src={getCORSImageUrl(IMAGE_BASE + d.poster_path)} crossOrigin="anonymous" className="w-full aspect-[2/3] object-cover mb-1" />
-                                            <p className="text-[14px] font-bold font-gaegu line-clamp-1">{d.name}</p>
+                                            <p className="text-[14px] font-bold line-clamp-1">{d.name}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -290,11 +287,11 @@
                             <button onClick={onClear} className="delete-btn absolute top-1 right-1 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-[10px] z-20 hover:bg-red-500">×</button>
                             <img src={getCORSImageUrl(data.poster)} crossOrigin="anonymous" className={`w-full h-full object-cover transition-all ${isDone ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`} />
                             {!isDone && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-white/20">
-                                    <div className="text-[18px] font-bold text-black font-gaegu leading-tight mb-2 px-1 break-keep">{data.title}</div>
-                                    <div className="flex gap-2 justify-center items-center">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-white/30 backdrop-blur-[1px]">
+                                    <div className="text-[17px] font-bold text-black leading-tight mb-2 px-1 break-keep" style={{fontFamily: "'Gaegu', cursive"}}>{data.title}</div>
+                                    <div className="flex gap-1.5 justify-center">
                                         {data.ott?.map((logo, i) => (
-                                            <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="w-5 h-5 rounded-md border border-black/10 shadow-sm" />
+                                            <img key={i} src={getCORSImageUrl(logo)} crossOrigin="anonymous" className="w-4.5 h-4.5 rounded-sm shadow-sm" />
                                         ))}
                                     </div>
                                 </div>
@@ -302,14 +299,14 @@
                             {isDone && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
                                     <div className="border-[3px] bg-white shadow-md flex items-center justify-center min-w-[50px] min-h-[50px] rotate-[-10deg] p-1" style={{ borderColor: stampColor }}>
-                                        <div className="flex items-center justify-center w-full h-full font-gaegu font-black text-3xl" style={{ color: stampColor }}>
+                                        <div className="flex items-center justify-center w-full h-full font-black text-3xl" style={{ color: stampColor }}>
                                             {isIconMode ? <i data-lucide={stamp} className="w-8 h-8 stroke-[3.5px]"></i> : <span>{stamp}</span>}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </>
-                    ) : <div className="h-full flex items-center justify-center text-gray-200 text-3xl font-gaegu">+</div>}
+                    ) : <div className="h-full flex items-center justify-center text-gray-200 text-3xl">+</div>}
                 </div>
             );
         }
