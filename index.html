@@ -71,7 +71,6 @@
                 if (sharedData) {
                     try { 
                         const parsed = JSON.parse(decodeURIComponent(atob(sharedData)));
-                        // 공유받은 데이터에서 핵심 정보만 추출하고 앨범/성공여부는 제외
                         return {
                             id: Date.now(),
                             title: parsed.title || "나의 정복 리스트",
@@ -98,29 +97,67 @@
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, results, isSearchOpen, album]);
             useEffect(() => { localStorage.setItem('sb_album', JSON.stringify(album)); }, [album]);
 
+            // --- 수정된 이미지 다운로드 함수 ---
             const exportAsImage = async () => {
                 if (!boardRef.current) return;
+
+                // 1. 폰트 로드 완료 보장
                 await document.fonts.ready;
+
+                const element = boardRef.current;
+                
                 const options = {
                     useCORS: true,
-                    scale: 2,
+                    allowTaint: true,
+                    scale: 2, // 고해상도 고정
                     backgroundColor: "#ffffff",
+                    logging: false,
+                    // 2. 캡처 영역을 실제 요소보다 넉넉하게 잡아 잘림 방지 (여백 확보)
+                    width: element.offsetWidth + 80,
+                    height: element.offsetHeight + 80,
+                    x: -40,
+                    y: -40,
+                    // 3. 브라우저 창 크기에 따른 가변 방지
+                    windowWidth: 1200,
+                    windowHeight: 1200,
                     onclone: (clonedDoc) => {
                         const deleteBtns = clonedDoc.querySelectorAll('.delete-btn');
                         deleteBtns.forEach(btn => btn.style.display = 'none');
+
                         const board = clonedDoc.querySelector('.board-to-export');
                         if (board) {
+                            // 4. 정렬 틀어짐 방지: 캡처 시에만 회전 해제 및 내부 마진 조정
                             board.style.transform = "none";
-                            board.style.margin = "0px";
+                            board.style.margin = "40px";
+                            board.style.boxShadow = "8px 8px 0px #000";
                         }
+
+                        // 5. 텍스트 간격 밀림 방지 및 폰트 강제 지정
+                        const allTexts = clonedDoc.querySelectorAll('input, div, p, span');
+                        allTexts.forEach(el => {
+                            el.style.letterSpacing = "0px";
+                            el.style.fontFamily = "'Gaegu', cursive";
+                        });
+
+                        // 6. 아이콘 중앙 정렬 고정
+                        const icons = clonedDoc.querySelectorAll('i[data-lucide]');
+                        icons.forEach(icon => {
+                            icon.style.display = 'inline-flex';
+                            icon.style.alignItems = 'center';
+                            icon.style.justifyContent = 'center';
+                        });
                     }
                 };
-                html2canvas(boardRef.current, options).then(canvas => {
+
+                try {
+                    const canvas = await html2canvas(element, options);
                     const link = document.createElement("a");
                     link.href = canvas.toDataURL("image/png", 1.0);
                     link.download = `${currentBoard.title}.png`;
                     link.click();
-                });
+                } catch (err) {
+                    console.error("Image Export Error:", err);
+                }
             };
 
             const fetchSearchResults = async (q) => {
@@ -218,7 +255,6 @@
                             <button onClick={saveToAlbum} className="doodle-button bg-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">ALBUM SAVE</button>
                             <button onClick={exportAsImage} className="doodle-button bg-yellow-300 py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">DOWNLOAD IMAGE</button>
                             <button onClick={() => {
-                                // 전송할 데이터에서 개인 앨범(album)과 달성 상태(dones)를 완전히 배제
                                 const dataToShare = {
                                     title: currentBoard.title,
                                     author: currentBoard.author,
@@ -230,7 +266,7 @@
                                 };
                                 const encodedData = btoa(encodeURIComponent(JSON.stringify(dataToShare)));
                                 navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?data=${encodedData}`)
-                                    .then(() => alert("공유 링크 복사 완료! (내 앨범 정보는 포함되지 않습니다.)"));
+                                    .then(() => alert("공유 링크 복사 완료!"));
                             }} className="doodle-button bg-black text-white py-4 font-bold font-gaegu text-xl shadow-[4px_4px_0px_#000]">SHARE LINK</button>
                         </div>
 
