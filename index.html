@@ -8,10 +8,9 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #050505; color: white; font-family: 'Noto Sans KR', sans-serif; }
+        body { background-color: #050505; color: white; font-family: 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
         .font-serif { font-family: 'Noto Serif KR', serif; }
         input:focus { outline: none; }
         @keyframes stamp-bang {
@@ -52,9 +51,7 @@
 
             const [isSearchOpen, setIsSearchOpen] = useState(false);
             const [activeIndex, setActiveIndex] = useState(null);
-            const [query, setQuery] = useState("");
             const [results, setResults] = useState([]);
-            const boardRef = useRef(null);
 
             useEffect(() => {
                 localStorage.setItem('sb_album', JSON.stringify(album));
@@ -63,14 +60,16 @@
 
             const fetchSearchResults = async (q) => {
                 if (q.length < 2) return;
-                const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
-                const data = await resp.json();
-                const withOtt = await Promise.all((data.results || []).map(async (item) => {
-                    const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
-                    const ottData = await ottResp.json();
-                    return { ...item, ott: ottData.results?.KR?.flatrate?.slice(0, 2).map(p => IMAGE_BASE + p.logo_path) || [] };
-                }));
-                setResults(withOtt);
+                try {
+                    const resp = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${q}&language=ko-KR`);
+                    const data = await resp.json();
+                    const withOtt = await Promise.all((data.results || []).map(async (item) => {
+                        const ottResp = await fetch(`https://api.themoviedb.org/3/tv/${item.id}/watch/providers?api_key=${API_KEY}`);
+                        const ottData = await ottResp.json();
+                        return { ...item, ott: ottData.results?.KR?.flatrate?.slice(0, 2).map(p => IMAGE_BASE + p.logo_path) || [] };
+                    }));
+                    setResults(withOtt);
+                } catch (e) { console.error(e); }
             };
 
             const createNewBoard = () => {
@@ -79,25 +78,16 @@
                 });
             };
 
-            const downloadImage = async () => {
-                if(!boardRef.current) return;
-                // 이미지 저장 시에만 CORS 허용을 위해 처리
-                const canvas = await html2canvas(boardRef.current, {
-                    backgroundColor: currentBoard.color,
-                    scale: 3,
-                    useCORS: true,
-                    proxy: null
-                });
-                const link = document.createElement('a');
-                link.download = `${currentBoard.title}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            };
-
             const saveToAlbum = () => {
                 const exists = album.find(b => b.id === currentBoard.id);
                 setAlbum(exists ? album.map(b => b.id === currentBoard.id ? currentBoard : b) : [...album, currentBoard]);
                 alert("앨범에 저장되었습니다!");
+            };
+
+            const shareLink = () => {
+                // 실제 배포된 URL이 있다면 window.location.href 사용
+                navigator.clipboard.writeText(window.location.href);
+                alert("공유 링크가 복사되었습니다! (기능 구현 필요 시 URL 파라미터 로직 추가 가능)");
             };
 
             return (
@@ -111,15 +101,15 @@
                         {/* 사이드 설정 도구 */}
                         <div className="flex md:flex-col gap-4 order-2 md:order-1 w-full md:w-auto justify-center">
                             <div className="flex flex-col items-center gap-1">
-                                <label className="text-[9px] font-bold text-zinc-500 uppercase">Color</label>
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Color</label>
                                 <div className="side-picker" style={{ backgroundColor: currentBoard.color }}>
                                     <input type="color" value={currentBoard.color} onChange={(e) => setCurrentBoard({...currentBoard, color: e.target.value})} />
                                 </div>
                             </div>
                             <div className="flex flex-col items-center gap-1">
-                                <label className="text-[9px] font-bold text-zinc-500 uppercase">Stamp</label>
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Stamp</label>
                                 <input 
-                                    className="w-11 h-11 bg-zinc-900 border-2 border-white/10 rounded-xl text-center font-serif text-red-600 text-xl font-bold"
+                                    className="w-11 h-11 bg-zinc-900 border-2 border-white/10 rounded-xl text-center font-serif text-red-600 text-xl font-bold shadow-lg"
                                     value={currentBoard.stamp} 
                                     onChange={(e) => setCurrentBoard({...currentBoard, stamp: e.target.value.slice(-1)})} 
                                 />
@@ -128,7 +118,7 @@
 
                         {/* 도장판 본체 */}
                         <div className="order-1 md:order-2 flex-grow w-full">
-                            <div ref={boardRef} style={{ backgroundColor: currentBoard.color }} className="p-8 rounded-2xl shadow-2xl transition-colors duration-500">
+                            <div style={{ backgroundColor: currentBoard.color }} className="p-8 rounded-2xl shadow-2xl transition-colors duration-500 border border-white/5">
                                 <div className="flex flex-col items-center mb-10 border-b border-white/10 pb-6 text-center">
                                     <input 
                                         className="bg-transparent text-5xl font-serif font-black w-full text-center outline-none" 
@@ -156,19 +146,19 @@
                     </div>
 
                     <div className="w-full max-w-2xl mt-12 space-y-8">
-                        <div className="grid grid-cols-3 gap-3">
-                            <button onClick={saveToAlbum} className="bg-zinc-800 py-4 rounded-xl font-bold text-xs hover:bg-zinc-700">앨범 저장</button>
-                            <button onClick={() => alert("공유 링크 복사 완료!")} className="bg-zinc-800 py-4 rounded-xl font-bold text-xs hover:bg-zinc-700">🔗 링크 공유</button>
-                            <button onClick={downloadImage} className="bg-red-700 py-4 rounded-xl font-bold text-xs hover:bg-red-600">💾 이미지 저장</button>
+                        {/* 이미지 저장 버튼 제거 후 2컬럼 그리드로 변경 */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <button onClick={saveToAlbum} className="bg-zinc-800 py-5 rounded-2xl font-bold text-sm hover:bg-zinc-700 transition-all shadow-lg">앨범 저장</button>
+                            <button onClick={shareLink} className="bg-red-700 py-5 rounded-2xl font-bold text-sm hover:bg-red-600 transition-all shadow-lg text-white">🔗 링크 공유</button>
                         </div>
 
                         <div>
-                            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Album ({album.length})</h2>
+                            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">My Collections ({album.length})</h2>
                             <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                                 {album.map(b => (
-                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[120px] aspect-square rounded-2xl border-2 p-3 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10' : 'border-zinc-800 bg-zinc-900'}`}>
-                                        <div className="text-[10px] font-black truncate">{b.title}</div>
-                                        <div className="text-right text-red-600 font-serif text-lg">{b.stamp}</div>
+                                    <div key={b.id} onClick={() => setCurrentBoard(b)} className={`min-w-[130px] aspect-square rounded-2xl border-2 p-4 flex flex-col justify-between cursor-pointer transition-all ${currentBoard.id === b.id ? 'border-red-600 bg-red-900/10' : 'border-zinc-800 bg-zinc-900'}`}>
+                                        <div className="text-[11px] font-black leading-tight line-clamp-2">{b.title}</div>
+                                        <div className="text-right text-red-600 font-serif text-xl">{b.stamp}</div>
                                     </div>
                                 ))}
                             </div>
@@ -188,7 +178,7 @@
                                             setCurrentBoard({...currentBoard, slots: newSlots});
                                             setIsSearchOpen(false);
                                         }} className="cursor-pointer group text-center">
-                                            <img src={IMAGE_BASE + d.poster_path} className="rounded-xl group-hover:ring-4 ring-red-600" />
+                                            <img src={IMAGE_BASE + d.poster_path} className="rounded-xl group-hover:ring-4 ring-red-600 transition-all shadow-lg" />
                                             <p className="text-[10px] mt-2 truncate opacity-50">{d.name}</p>
                                         </div>
                                     ))}
@@ -201,54 +191,38 @@
         }
 
         function Slot({ data, isDone, onToggle, onSearch, stamp }) {
-    return (
-        <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer shadow-inner active:scale-95 transition-all">
-            {data ? (
-                <>
-                    <img 
-                        src={data.poster} 
-                        className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-110' : 'grayscale brightness-[0.35]'}`} 
-                    />
-                    
-                    {/* 도장 찍기 전: 제목과 OTT 아이콘 표시 */}
-                    {!isDone && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/10">
-                            {/* 드라마 제목: text-sm으로 키우고 font-black으로 강조 */}
-                            <div className="text-[15px] md:text-sm font-black leading-tight text-white mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] line-clamp-3 px-1">
-                                {data.title}
-                            </div>
-                            
-                            {/* OTT 아이콘 영역 */}
-                            <div className="flex gap-1.5 justify-center flex-wrap">
-                                {data.ott && data.ott.length > 0 ? (
-                                    data.ott.map((logoUrl, idx) => (
-                                        <img 
-                                            key={idx} 
-                                            src={logoUrl} 
-                                            className="w-6 h-6 rounded-md shadow-lg border border-white/10" 
-                                            onError={(e) => e.target.style.display = 'none'} // 로고가 없을 경우 숨김 처리
-                                        />
-                                    ))
-                                ) : null}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 도장 찍은 후: 쾅! 애니메이션 */}
-                    {isDone && (
-                        <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
-                            <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-sm shadow-2xl">
-                                {stamp}
-                            </div>
-                        </div>
-                    )}
-                </>
-            ) : (
-                <div className="h-full flex items-center justify-center text-white/5 text-3xl font-light">+</div>
-            )}
-        </div>
-    );
-}
+            return (
+                <div onClick={() => data ? onToggle() : onSearch()} className="relative aspect-[3/4] bg-black/40 rounded-xl overflow-hidden border border-white/5 cursor-pointer shadow-inner active:scale-95 transition-all">
+                    {data ? (
+                        <>
+                            <img 
+                                src={data.poster} 
+                                className={`w-full h-full object-cover transition-all duration-700 ${isDone ? 'grayscale-0 scale-110' : 'grayscale brightness-[0.35]'}`} 
+                            />
+                            {!isDone && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-black/10">
+                                    <div className="text-[15px] md:text-sm font-black leading-tight text-white mb-3 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] line-clamp-3 px-1">
+                                        {data.title}
+                                    </div>
+                                    <div className="flex gap-1.5 justify-center flex-wrap">
+                                        {data.ott?.map((logoUrl, idx) => (
+                                            <img key={idx} src={logoUrl} className="w-6 h-6 rounded-md shadow-lg border border-white/10" onError={(e) => e.target.style.display = 'none'} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {isDone && (
+                                <div className="absolute inset-0 flex items-center justify-center animate-stamp pointer-events-none">
+                                    <div className="border-[3px] border-red-600 text-red-600 font-serif font-black text-2xl p-1 bg-white/10 backdrop-blur-sm shadow-2xl">
+                                        {stamp}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : <div className="h-full flex items-center justify-center text-white/5 text-3xl font-light">+</div>}
+                </div>
+            );
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
