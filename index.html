@@ -118,16 +118,25 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [currentBoard, viewerMode, album, isSearchOpen, manualAdd, results]);
 
-            const fetchSearchResults = async (q) => {
-                if (q.length < 2) { setResults([]); return; }
-                try {
-                    const resp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=your_api_key_here&query=${encodeURIComponent(q)}&language=ko-KR`);
-                    // 실제 구현 시에는 프록시나 유효한 API 키가 필요합니다.
-                    const data = await resp.json();
-                    const filtered = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
-                    setResults(filtered);
-                } catch (e) { console.error("검색 에러:", e); }
-            };
+            // 기존 코드 (에러 발생 중)
+// const resp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=your_api_key_here&...`);
+
+// 수정된 코드 (내 서버의 프록시를 거침)
+const fetchSearchResults = async (q) => {
+    if (q.length < 2) { setResults([]); return; }
+    try {
+        // 프록시 파일의 경로를 적어줍니다. (예: /api/search)
+        const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        
+        if (!resp.ok) throw new Error("프록시 서버 응답 에러");
+
+        const data = await resp.json();
+        const filtered = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+        setResults(filtered);
+    } catch (e) { 
+        console.error("검색 에러:", e); 
+    }
+};
 
             return (
                 <div className="max-w-4xl mx-auto p-4 md:p-6 flex flex-col items-center pb-24 relative">
