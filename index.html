@@ -77,17 +77,37 @@
 
             useEffect(() => { localStorage.setItem('sb_album', JSON.stringify(album)); }, [album]);
 
+            // [개선된 로직] 페이지 로드 시 압축된 링크(d=...) 또는 이전 링크(data=...) 처리
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
-                const data = params.get('data');
-                if (data) {
+                const compressedData = params.get('d');
+                const oldData = params.get('data');
+
+                const loadData = async () => {
                     try {
-                        const parsed = JSON.parse(decodeURIComponent(atob(data)));
-                        const newBoard = { ...parsed, id: Date.now(), dones: Array(parsed.slots.length).fill(false) };
-                        setCurrentBoard(newBoard);
-                        setOtherBoards([newBoard]);
-                    } catch(e) { console.error(e); }
-                }
+                        let parsed;
+                        if (compressedData) {
+                            // 최신 압축 방식 (GZIP 해제)
+                            const base64 = compressedData.replace(/-/g, '+').replace(/_/g, '/');
+                            const binary = atob(base64);
+                            const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                            const stream = new Blob([bytes]).stream();
+                            const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+                            const result = await new Response(decompressedStream).text();
+                            parsed = JSON.parse(result);
+                        } else if (oldData) {
+                            // 이전 호환성 유지 (단순 Base64)
+                            parsed = JSON.parse(decodeURIComponent(atob(oldData)));
+                        }
+
+                        if (parsed) {
+                            const newBoard = { ...parsed, id: Date.now(), dones: Array(parsed.slots.length).fill(false) };
+                            setCurrentBoard(newBoard);
+                            setOtherBoards([newBoard]);
+                        }
+                    } catch (e) { console.error("데이터 복구 실패:", e); }
+                };
+                loadData();
             }, []);
 
             const textColor = useMemo(() => {
@@ -101,7 +121,8 @@
             const fetchSearchResults = async (q) => {
                 if (q.length < 2) { setResults([]); return; }
                 try {
-                    const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                    const resp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=your_api_key_here&query=${encodeURIComponent(q)}&language=ko-KR`);
+                    // 실제 구현 시에는 프록시나 유효한 API 키가 필요합니다.
                     const data = await resp.json();
                     const filtered = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
                     setResults(filtered);
@@ -196,23 +217,34 @@
 
                     <div className="flex gap-3 mt-8 w-full">
                         <button onClick={saveToAlbum} className="flex-1 doodle-button bg-white py-3 font-bold font-gaegu text-lg shadow-[3px_3px_0px_#000]">SAVE</button>
-                        // 개선 방식: 기존 쿼리스트링(?...)을 제거하고 순수 주소에 새 데이터만 결합
-<button onClick={() => {
-    const { dones, ...safeData } = currentBoard;
-    try {
-        const data = btoa(encodeURIComponent(JSON.stringify(safeData)));
-        // window.location.search를 제외하여 주소가 꼬이는 것을 방지
-        const shareUrl = `${window.location.origin}${window.location.pathname}?data=${data}`;
-        
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            alert("새로운 리스트 링크가 복사되었습니다! 🔗");
-        });
-    } catch (e) {
-        alert("링크 생성 중 오류가 발생했습니다.");
-    }
-}} className="flex-1 doodle-button bg-black text-white py-3 font-bold font-gaegu text-lg shadow-[3px_3px_0px_rgba(0,0,0,0.3)]">
-    SHARE
-</button>
+                        
+                        {/* 개선 방식: GZIP 압축 및 주석 오류 수정 */}
+                        <button onClick={async () => {
+                            const { dones, ...safeData } = currentBoard;
+                            try {
+                                const jsonStr = JSON.stringify(safeData);
+                                // 1. GZIP 압축 진행
+                                const stream = new Blob([jsonStr]).stream();
+                                const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+                                const chunks = [];
+                                for await (const chunk of compressedStream) chunks.push(chunk);
+                                const compressedBuffer = await new Response(new Blob(chunks)).arrayBuffer();
+                                
+                                // 2. URL 세이프 Base64 변환
+                                const base64 = btoa(String.fromCharCode(...new Uint8Array(compressedBuffer)))
+                                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                                
+                                const shareUrl = `${window.location.origin}${window.location.pathname}?d=${base64}`;
+                                
+                                navigator.clipboard.writeText(shareUrl).then(() => {
+                                    alert("압축된 공유 링크가 복사되었습니다! 🔗");
+                                });
+                            } catch (e) {
+                                alert("링크 생성 중 오류가 발생했습니다.");
+                            }
+                        }} className="flex-1 doodle-button bg-black text-white py-3 font-bold font-gaegu text-lg shadow-[3px_3px_0px_rgba(0,0,0,0.3)]">
+                            SHARE
+                        </button>
                     </div>
 
                     {album.length > 0 && (
@@ -220,23 +252,21 @@
                             <h2 className="text-xl font-bold uppercase mb-4 md:mb-8 font-gaegu opacity-50">Album</h2>
                             <div className="flex gap-3 md:gap-5 overflow-x-auto pb-2 custom-scrollbar">
                                 {album.map(b => (
-    <div 
-        key={b.id} 
-        onClick={() => {
-            // 1. 클릭한 도장판 데이터를 화면에 띄움
-            setCurrentBoard(b);
-            // 2. 주소창에 남아있는 지저분한 ?data=... 부분을 제거 (새로고침 없이 깔끔하게!)
-            window.history.replaceState({}, '', window.location.pathname);
-        }} 
-        className="relative min-w-[110px] md:min-w-[150px] aspect-square bg-white border-2 border-black p-2 md:p-4 cursor-pointer shadow-[3px_3px_0px_#000] flex flex-col group"
-    >
-        <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(i => i.id !== b.id)); }} className="absolute top-1 right-1 text-xl font-bold text-gray-300 hover:text-red-500 z-10">×</button>
-        <div className="flex-grow flex items-center justify-center text-2xl md:text-4xl" style={{ color: b.stampColor }}>
-            {b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8 md:w-12 md:h-12"></i> : b.stamp}
-        </div>
-        <div className="text-xs md:text-lg font-bold truncate text-center border-t border-black/5 pt-1 font-gaegu">{b.title}</div>
-    </div>
-))}
+                                    <div 
+                                        key={b.id} 
+                                        onClick={() => {
+                                            setCurrentBoard(b);
+                                            window.history.replaceState({}, '', window.location.pathname);
+                                        }} 
+                                        className="relative min-w-[110px] md:min-w-[150px] aspect-square bg-white border-2 border-black p-2 md:p-4 cursor-pointer shadow-[3px_3px_0px_#000] flex flex-col group"
+                                    >
+                                        <button onClick={(e) => { e.stopPropagation(); setAlbum(album.filter(i => i.id !== b.id)); }} className="absolute top-1 right-1 text-xl font-bold text-gray-300 hover:text-red-500 z-10">×</button>
+                                        <div className="flex-grow flex items-center justify-center text-2xl md:text-4xl" style={{ color: b.stampColor }}>
+                                            {b.isIconMode ? <i data-lucide={b.stamp} className="w-8 h-8 md:w-12 md:h-12"></i> : b.stamp}
+                                        </div>
+                                        <div className="text-xs md:text-lg font-bold truncate text-center border-t border-black/5 pt-1 font-gaegu">{b.title}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
